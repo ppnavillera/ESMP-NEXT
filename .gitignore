@@ -36,7 +36,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.route copy.ts
 src/app/player/cors.ts
 src/app/api/notion/route_copy.ts
 src/app/player/cors.ts
