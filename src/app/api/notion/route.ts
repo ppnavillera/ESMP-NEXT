@@ -32,7 +32,7 @@ export async function POST(request: Request): Promise<Response> {
     const songData = data.properties;
 
     const props = [];
-    props.push(songData.Title.title[0].text.content);
+    // props.push(songData.Title.title[0].text.content);
 
     // console.log(songData);
     for (const key in songData) {
