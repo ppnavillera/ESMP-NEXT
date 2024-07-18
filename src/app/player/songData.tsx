@@ -14,6 +14,7 @@ export default function SongData({ name }: SongDataProps) {
 
   useEffect(() => {
     const fetchData = async () => {
+      setError(null);
       setLoading(true);
       const searchPayload = {
         filter: {
@@ -41,7 +42,7 @@ export default function SongData({ name }: SongDataProps) {
         const data = await response.json();
         setResults(data);
         setLoading(false);
-        setError(null);
+        // setError(null);
       } catch (error: any) {
         setError(error.message);
         setResults(["일치하는 정보가 없습니다."]);
@@ -54,7 +55,7 @@ export default function SongData({ name }: SongDataProps) {
   return (
     <>
       {!loading ? (
-        <ul>
+        <ul className="list-disc pl-5 space-y-2 text-gray-700">
           {results.map((props, index) => {
             return <li key={index}>{props}</li>;
           })}

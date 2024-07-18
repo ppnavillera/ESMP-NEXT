@@ -49,7 +49,7 @@ export async function POST(request: Request): Promise<Response> {
           props.push(`${key}: ${songData[key].select.name}`);
         } else if (propType === "multi_select") {
           const multiSelect = songData[key].multi_select;
-          const names = multiSelect.map((item) => {
+          const names = multiSelect.map((item: { name: any }) => {
             return item.name;
           });
           props.push(`${key}: ${names}`);
@@ -69,7 +69,13 @@ export async function POST(request: Request): Promise<Response> {
     // console.log(songData);
     return Response.json(props);
   } catch (error) {
-    console.log(error);
-    return Response.json({ error: error.message }, { status: 500 });
+    if (error instanceof Error) {
+      return Response.json({ error: error.message }, { status: 500 });
+    } else {
+      return Response.json(
+        { error: "Unknown error occurred" },
+        { status: 500 }
+      );
+    }
   }
 }

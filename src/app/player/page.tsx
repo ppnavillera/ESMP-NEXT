@@ -9,12 +9,9 @@ interface Mp3Link {
 
 export default async function Page() {
   const notionSongs: Mp3Link[] = await notion();
-  // console.log(notionSongs.length);
-  const get = await getTest();
-  // console.log(get.json());
   return (
     <>
-      <div className="container">mp3 player</div>
+      {/* <h1>mp3 player</h1> */}
       <Mp3Player songs={notionSongs} />
     </>
   );
