@@ -18,6 +18,7 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
   const [currentName, setCurrentName] = useState<string>("");
   const [currentUrl, setCurrentUrl] = useState<string>("");
   const [wrongIndex, setWrongIndex] = useState<boolean>(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const handlePropChange = (index: number) => {
     if (index === -1) {
@@ -29,7 +30,13 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
       setCurrentName(songs[index].name);
     }
   };
-
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.load();
+      // audioRef.current.play();
+    }
+  }, [currentUrl]);
   return (
     <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
       <Link href="/">
@@ -60,7 +67,7 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
         </select>
         {currentUrl && !wrongIndex && (
           <div className="mb-4">
-            <audio controls autoPlay={false} className="w-full">
+            <audio ref={audioRef} controls autoPlay={false} className="w-full">
               <source src={currentUrl} type="audio/mp3" />
               Your browser does not support the audio element.
             </audio>
