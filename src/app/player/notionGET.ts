@@ -7,9 +7,9 @@ const notionHeaders = {
   "Notion-Version": "2022-06-28",
 };
 
-const notionGET = async () => {
+const notionGET = async (name: string) => {
   const searchUrl = `https://api.notion.com/v1/databases/${NOTION_DEMO_DATABASE_ID}/query`;
-  const title = "성장통";
+  const title = name;
   const searchPayload = {
     filter: {
       property: "Title",
@@ -24,7 +24,7 @@ const notionGET = async () => {
     body: JSON.stringify(searchPayload),
   });
   const data = await response.json();
-  console.log(data.results[0].properties.성별);
+  // console.log(data.results[0].properties.성별);
 };
 
 export default notionGET;
