@@ -27,6 +27,15 @@ export default function SongData({ name }: SongDataProps) {
     }
   }, [loading]);
 
+  const searchPayload = {
+    filter: {
+      property: "Title",
+      title: {
+        equals: trackTitle, // 'trackTitle'로 변경하여 상태 사용
+      },
+    },
+  };
+
   const search = async () => {
     try {
       const response = await fetch("/api/notion", {
