@@ -1,9 +1,9 @@
 const { Client } = require("@notionhq/client");
 
-const NOTION_TOKEN = process.env.NEXT_PUBLIC_NOTION_TOKEN;
+const NOTION_DEMO_TOKEN = process.env.NEXT_PUBLIC_NOTION_TOKEN;
 const NOTION_DEMO_DATABASE_ID = process.env.NEXT_PUBLIC_NOTION_DEMO_DATABASE_ID;
 
-const notion = new Client({ auth: NOTION_TOKEN });
+const notion = new Client({ auth: NOTION_DEMO_TOKEN });
 
 // export const dynamic = "force-dynamic"; // defaults to auto
 export async function POST(request: Request): Promise<Response> {
