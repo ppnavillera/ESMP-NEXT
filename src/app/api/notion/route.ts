@@ -1,7 +1,7 @@
 const { Client } = require("@notionhq/client");
 
 const NOTION_DEMO_TOKEN = process.env.NEXT_PUBLIC_NOTION_TOKEN;
-const NOTION_DEMO_DATABASE_ID = process.env.NEXT_PUBLIC_NOTION_DEMO_DATABASE_ID;
+const NOTION_DEMO_DATABASE_ID = process.env.NEXT_PUBLIC_NOTION_DATABASE_ID2;
 
 const notion = new Client({ auth: NOTION_DEMO_TOKEN });
 
