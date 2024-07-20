@@ -51,7 +51,7 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
         <label htmlFor="mp3-select" className="sr-only">
           MP3 파일을 선택하세요:
         </label>
-        <select
+        {/* <select
           id="mp3-select"
           className="block w-full bg-gray-100 border border-gray-300 text-gray-700 py-2 px-3 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
           onChange={(e) => {
@@ -64,7 +64,26 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
               {link.name}
             </option>
           ))}
-        </select>
+        </select> */}
+        <ol>
+          {songs.map((link, index) => (
+            <li key={index} value={link.name}>
+              <Link href={`/detail/${encodeURIComponent(link.name)}`}>
+                {link.name}
+              </Link>
+              <audio
+                ref={audioRef}
+                controls
+                autoPlay={false}
+                className="w-full"
+              >
+                <source src={link.url} type="audio/mp3" />
+                Your browser does not support the audio element.
+              </audio>
+            </li>
+          ))}
+        </ol>
+
         {currentUrl && !wrongIndex && (
           <div className="mb-4">
             <audio ref={audioRef} controls autoPlay={false} className="w-full">
@@ -73,7 +92,7 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
             </audio>
           </div>
         )}
-        {currentName ? <SongData name={currentName} /> : null}
+        {/* {currentName ? <SongData name={currentName} /> : null} */}
       </div>
     </div>
   );
