@@ -3,9 +3,15 @@
 import { useParams } from "next/navigation";
 import SongData from "../../player/songData";
 
+interface ParamsName {
+  name: string;
+}
+
 export default function Detail() {
-  const params = useParams();
+  // const params = useParams<{ name: string }>();
+  const params = useParams;
   const { name } = params;
+  // const { name } = params as { name: string };
   const decodedName = decodeURIComponent(name);
 
   return (
