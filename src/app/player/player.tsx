@@ -107,7 +107,7 @@ const Mp3Player = () => {
   }, [loading, hasMore]);
 
   return (
-    <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
+    <div className=" mx-auto bg-white p-6 rounded-lg shadow-lg max-w-screen-xl ">
       <Link href="/">
         <HomeIcon className="h-10 w-10 text-gray-500 cursor-pointer" />
       </Link>
