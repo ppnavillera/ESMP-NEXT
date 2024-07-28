@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Test1 from "./player/test1";
 
 export default function Home() {
   return (
