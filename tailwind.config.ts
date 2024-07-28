@@ -8,6 +8,12 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Noto Sans KR", "Arial", "sans-serif"],
+        notosans: ["Noto Sans KR", "sans-serif"],
+        montserrat: ["Montserrat", "sans-serif"],
+        pretendard: ["Pretendard-Regular"],
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":

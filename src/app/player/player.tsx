@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { HomeIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import SongData from "./songData";
+import Accordion from "../detail/[name]/acco";
+import AccordionItem from "../detail/[name]/accoItem";
 
 interface Mp3Link {
   name: string;
@@ -31,7 +34,20 @@ const Mp3Player = () => {
   const [startCursor, setStartCursor] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
-  const limit = 20; // 한 번에 불러올 데이터 수
+  const limit = 15; // 한 번에 불러올 데이터 수
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [loadingStates, setLoadingStates] = useState({});
+
+  const handleToggle = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
+  const handleLoadingChange = (index, isLoading) => {
+    setLoadingStates((prevStates) => ({
+      ...prevStates,
+      [index]: isLoading,
+    }));
+  };
 
   const fetchData = async (cursor?: string, limit?: number) => {
     setLoading(true);
@@ -114,33 +130,23 @@ const Mp3Player = () => {
             return (
               <li key={index} value={name}>
                 {/* <Link href={`/detail/${encodeURIComponent(name)}`}>{name}</Link> */}
-                {name}
-                <svg
-                  data-accordion-icon
-                  className="w-3 h-3 rotate-180 shrink-0"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 10 6"
+                {/* {name} */}
+                {/* <SongData name={name} /> */}
+                <AccordionItem
+                  key={index}
+                  title={name}
+                  isOpen={openIndex === index}
+                  onToggle={() => handleToggle(index)}
+                  url={url}
+                  isLoading={loadingStates[index] || false} // 로딩 상태 전달
                 >
-                  <path
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5 5 1 1 5"
+                  <SongData
+                    name={name}
+                    onLoadingChange={(isLoading) =>
+                      handleLoadingChange(index, isLoading)
+                    }
                   />
-                </svg>
-
-                <audio
-                  ref={audioRef}
-                  controls
-                  autoPlay={false}
-                  className="w-full"
-                >
-                  <source src={url} type="audio/mp3" />
-                  Your browser does not support the audio element.
-                </audio>
+                </AccordionItem>
               </li>
             );
           })}{" "}
