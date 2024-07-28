@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { HomeIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import SongData from "./songData";
-import Accordion from "../detail/[name]/acco";
-import AccordionItem from "../detail/[name]/accoItem";
+import AccordionItem from "./accoItem";
 
 interface Mp3Link {
   name: string;
