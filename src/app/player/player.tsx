@@ -27,6 +27,15 @@ interface Song {
   };
 }
 
+interface AccordionItemProps {
+  key: number;
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  url: string;
+  isLoading: boolean;
+}
+
 const Mp3Player = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -36,13 +45,15 @@ const Mp3Player = () => {
   const [loading, setLoading] = useState(false);
   const limit = 15; // 한 번에 불러올 데이터 수
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [loadingStates, setLoadingStates] = useState({});
+  const [loadingStates, setLoadingStates] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   const handleToggle = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
-  const handleLoadingChange = (index, isLoading) => {
+  const handleLoadingChange = (index: number, isLoading: boolean) => {
     setLoadingStates((prevStates) => ({
       ...prevStates,
       [index]: isLoading,

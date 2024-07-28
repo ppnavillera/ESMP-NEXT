@@ -2,7 +2,17 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
 
-const AccordionItem = ({
+interface AccordionItemProps {
+  key: number;
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  url: string;
+  isLoading: boolean;
+  children?: React.ReactNode;
+}
+
+const AccordionItem: React.FC<AccordionItemProps> = ({
   title,
   children,
   isOpen,
@@ -10,7 +20,7 @@ const AccordionItem = ({
   url,
   isLoading,
 }) => {
-  const contentRef = useRef(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState("0px");
   const [opacity, setOpacity] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -30,7 +40,9 @@ const AccordionItem = ({
       if (isLoading) {
         setHeight("50px"); // 로딩 중일 때 고정된 높이 설정
       } else {
-        setHeight(`${contentRef.current.scrollHeight}px`);
+        if (contentRef.current) {
+          setHeight(`${contentRef.current.scrollHeight}px`);
+        }
       }
       setTimeout(() => setOpacity(1), 150);
     } else {
