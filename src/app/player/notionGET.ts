@@ -24,7 +24,6 @@ const notionGET = async (name: string) => {
     body: JSON.stringify(searchPayload),
   });
   const data = await response.json();
-  // console.log(data.results[0].properties.성별);
 };
 
 export default notionGET;

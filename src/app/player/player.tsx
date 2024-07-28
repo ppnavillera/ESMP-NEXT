@@ -20,16 +20,17 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
   const [wrongIndex, setWrongIndex] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const handlePropChange = (index: number) => {
-    if (index === -1) {
-      setWrongIndex(true);
-      setCurrentName("");
-    } else {
-      setWrongIndex(false);
-      setCurrentUrl(songs[index].url);
-      setCurrentName(songs[index].name);
-    }
-  };
+  // const handlePropChange = (index: number) => {
+  //   if (index === -1) {
+  //     setWrongIndex(true);
+  //     setCurrentName("");
+  //   } else {
+  //     setWrongIndex(false);
+  //     setCurrentUrl(songs[index].url);
+  //     setCurrentName(songs[index].name);
+  //   }
+  // };
+
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -51,20 +52,6 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
         <label htmlFor="mp3-select" className="sr-only">
           MP3 파일을 선택하세요:
         </label>
-        {/* <select
-          id="mp3-select"
-          className="block w-full bg-gray-100 border border-gray-300 text-gray-700 py-2 px-3 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-          onChange={(e) => {
-            handlePropChange(e.target.selectedIndex - 1);
-          }}
-        >
-          <option value="">MP3 파일을 선택하세요</option>
-          {songs.map((link, index) => (
-            <option key={index} value={link.name}>
-              {link.name}
-            </option>
-          ))}
-        </select> */}
         <ol>
           {songs.map((link, index) => (
             <li key={index} value={link.name}>
@@ -83,16 +70,14 @@ const Mp3Player = ({ songs }: Mp3SelectorProps) => {
             </li>
           ))}
         </ol>
-
-        {currentUrl && !wrongIndex && (
+        {/* {currentUrl && !wrongIndex && (
           <div className="mb-4">
             <audio ref={audioRef} controls autoPlay={false} className="w-full">
               <source src={currentUrl} type="audio/mp3" />
               Your browser does not support the audio element.
             </audio>
           </div>
-        )}
-        {/* {currentName ? <SongData name={currentName} /> : null} */}
+        )} */}
       </div>
     </div>
   );

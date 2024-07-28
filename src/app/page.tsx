@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Test1 from "./test1";
 
 export default function Home() {
   return (
@@ -6,6 +7,7 @@ export default function Home() {
       <h1 className="font-bold text-red-300 text-6xl text-center mb-8">
         ESMP !
       </h1>
+      <Test1 />
       <nav className="border-gray-900 border p-4 rounded-lg shadow-lg bg-white">
         <ul className="flex justify-center space-x-4">
           <li>

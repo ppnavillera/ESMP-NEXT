@@ -9,7 +9,7 @@ interface ParamsName {
 
 export default function Detail() {
   // const params = useParams<{ name: string }>();
-  const params = useParams;
+  const params = useParams();
   const { name } = params;
   // const { name } = params as { name: string };
   const decodedName = decodeURIComponent(name);
