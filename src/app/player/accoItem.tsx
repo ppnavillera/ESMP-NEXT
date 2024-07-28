@@ -58,11 +58,11 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
   return (
     <div className="border-b drop-shadow-lg">
       <button
-        className="w-full flex-row justify-between items-center p-4 bg-gray-100 drop-shadow-md rounded-lg"
+        className="w-full flex-row justify-between items-center p-4 bg-gray-100 drop-shadow-md rounded-lg sm:p-4"
         onClick={onToggle}
         aria-expanded={isOpen}
       >
-        <div className="w-full flex justify-between items-center p-4">
+        <div className="p-2 sm:w-full flex justify-between items-center p-4 ">
           <div className="flex-grow text-center">
             <span>{title}</span>
           </div>
@@ -90,7 +90,12 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
             </svg>
           </span>
         </div>
-        <audio ref={audioRef} controls autoPlay={false} className="w-full mb-2">
+        <audio
+          ref={audioRef}
+          controls
+          autoPlay={false}
+          className=" mb-0 sm:w-full mb-2"
+        >
           <source src={url} type="audio/mp3" />
           Your browser does not support the audio element.
         </audio>

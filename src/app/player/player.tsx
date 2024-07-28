@@ -11,10 +11,6 @@ interface Mp3Link {
   url: string;
 }
 
-interface Mp3SelectorProps {
-  songs: Mp3Link[];
-}
-
 interface Song {
   properties: {
     Song: {
@@ -24,15 +20,6 @@ interface Song {
       url: string;
     };
   };
-}
-
-interface AccordionItemProps {
-  key: number;
-  title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  url: string;
-  isLoading: boolean;
 }
 
 const Mp3Player = () => {
@@ -139,9 +126,6 @@ const Mp3Player = () => {
             const url = link.properties.Link.url;
             return (
               <li key={index} value={name}>
-                {/* <Link href={`/detail/${encodeURIComponent(name)}`}>{name}</Link> */}
-                {/* {name} */}
-                {/* <SongData name={name} /> */}
                 <AccordionItem
                   key={index}
                   title={name}
