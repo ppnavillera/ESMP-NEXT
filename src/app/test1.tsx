@@ -1,37 +1,3 @@
-// "use client";
-
-// import { useEffect, useState } from "react";
-
-// export default function Test1() {
-//   const [songs, setSongs] = useState([]);
-//   const [hasMore, setHasMore] = useState(true);
-//   const [startCursor, setStartCursor] = useState(undefined);
-
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       try {
-//         while (hasMore) {
-//           const response = await fetch("/api/songlist", {
-//             method: "GET",
-//             headers: {
-//               "Content-Type": "application/json",
-//             },
-//           });
-
-//           const data = await response.json();
-//           console.log(data);
-//         }
-//       } catch {}
-//     };
-//     fetchData();
-//   }, [hasMore, startCursor]);
-//   return (
-//     <>
-//       <h1>hi</h1>
-//     </>
-//   );
-// }
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -43,52 +9,25 @@ export default function Test1() {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // useEffect(() => {
-  //   const fetchData = async (cursor) => {
-  //     try {
-  //       const response = await fetch(
-  //         `/api/songlist?start_cursor=${cursor || ""}`,
-  //         {
-  //           method: "GET",
-  //           headers: {
-  //             "Content-Type": "application/json",
-  //           },
-  //         }
-  //       );
-
-  //       const json = await response.json();
-  //       console.log(json);
-
-  //       // setSongs((prevSongs) => [...prevSongs, ...json.results]);
-  //       // setHasMore(json.has_more);
-  //       // setStartCursor(json.next_cursor);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-
-  //   if (hasMore) {
-  //     fetchData(startCursor);
-  //   }
-  //   console.log(songs);
-  // }, [hasMore, startCursor]);
-
-  const fetchData = async () => {
+  const fetchData = async (cursor) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/songlist`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `/api/songlist?start_cursor=${cursor || ""}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const json = await response.json();
       console.log(json);
 
       setSongs((prevSongs) => [...prevSongs, ...json.results]);
-      // setHasMore(json.has_more);
-      // setStartCursor(json.next_cursor);
+      setHasMore(json.has_more);
+      setStartCursor(json.next_cursor);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -96,13 +35,14 @@ export default function Test1() {
   };
 
   useEffect(() => {
-    fetchData();
-    // console.log(page);
+    if (hasMore) {
+      fetchData(startCursor);
+    }
   }, [page]);
 
-  const handleObserver = (entries: IntersectionObserverEntry[]) => {
+  const handleObserver = (entries) => {
     const target = entries[0];
-    if (target.isIntersecting && !loading) {
+    if (target.isIntersecting && !loading && hasMore) {
       setPage((prevPage) => prevPage + 1);
     }
   };
@@ -115,7 +55,14 @@ export default function Test1() {
     if (observerTarget) {
       observer.observe(observerTarget);
     }
-  });
+
+    return () => {
+      if (observerTarget) {
+        observer.unobserve(observerTarget);
+      }
+    };
+  }, [loading, hasMore]);
+
   return (
     <div>
       <ul>
