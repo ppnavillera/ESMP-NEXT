@@ -43,7 +43,7 @@ export async function POST(request: Request) {
           console.log(`${key}: ${songData[key].select.name}`);
         } else if (propType === "multi_select") {
           const multiSelect = songData[key].multi_select;
-          const names = multiSelect.map((item) => {
+          const names = multiSelect.map((item: { name: any }) => {
             return item.name;
           });
           console.log(`${key}: ${names}`);
