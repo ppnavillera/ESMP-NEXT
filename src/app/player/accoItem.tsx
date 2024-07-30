@@ -3,37 +3,28 @@
 import React, { useRef, useEffect, useState } from "react";
 
 interface AccordionItemProps {
-  key: number;
+  index: number;
   title: string;
   isOpen: boolean;
-  onToggle: () => void;
-  url: string;
+  onToggle: (title: string, key: number) => void;
+  // url: string;
   isLoading: boolean;
   children?: React.ReactNode;
 }
 
 const AccordionItem: React.FC<AccordionItemProps> = ({
+  index,
   title,
   children,
   isOpen,
   onToggle,
-  url,
+  // url,
   isLoading,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState("0px");
   const [opacity, setOpacity] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  // useEffect(() => {
-  //   if (isOpen) {
-  //     setHeight(`${contentRef.current.scrollHeight}px`);
-  //     setTimeout(() => setOpacity(1), 150); // 글자가 보이기 시작하는 타이밍을 빠르게 설정
-  //   } else {
-  //     setHeight("0px");
-  //     setOpacity(0);
-  //   }
-  // }, [isOpen]);
 
   const updateHeight = () => {
     if (isOpen) {
@@ -59,12 +50,13 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
     <div className="border-b drop-shadow-lg">
       <button
         className="w-full flex-row justify-between items-center p-2 sm:p-4 bg-gray-100 drop-shadow-md rounded-lg"
-        onClick={onToggle}
+        onClick={() => onToggle(title, index)}
         aria-expanded={isOpen}
       >
         <div className="p-2 w-full flex justify-between items-center sm:p-4 ">
           <div className="flex-grow text-center">
             <span>{title}</span>
+            <br />
           </div>
           <span
             className={`transform transition-transform duration-200 ${
@@ -90,7 +82,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
             </svg>
           </span>
         </div>
-        <audio
+        {/* <audio
           ref={audioRef}
           controls
           autoPlay={false}
@@ -98,7 +90,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
         >
           <source src={url} type="audio/mp3" />
           Your browser does not support the audio element.
-        </audio>
+        </audio> */}
       </button>
       <div
         ref={contentRef}

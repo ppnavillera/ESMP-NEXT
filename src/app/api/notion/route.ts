@@ -9,12 +9,12 @@ const notion = new Client({ auth: NOTION_DEMO_TOKEN });
 export async function POST(request: Request): Promise<Response> {
   try {
     const { filter } = await request.json();
-    console.log(filter);
+    // console.log(filter);
     const response = await notion.databases.query({
       database_id: NOTION_DEMO_DATABASE_ID,
       filter,
     });
-    console.log(response);
+    // console.log(response);
 
     if (response.results.length === 0) {
       return Response.json(
