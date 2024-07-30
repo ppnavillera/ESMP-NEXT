@@ -36,7 +36,6 @@ const Mp3Player = () => {
   const [songObj, setSongObj] = useState<SongObj>();
   const [currentSong, setCurrentSong] = useState<string>();
   const [currentLink, setCurrentLink] = useState<string>();
-  const [songLoading, setSongLoading] = useState<boolean>(true);
 
   const setSongsObj = () => {
     songs.forEach((song) => {
@@ -61,7 +60,6 @@ const Mp3Player = () => {
   };
 
   useEffect(() => {
-    setSongLoading(false);
     if (audioRef.current && currentLink) {
       audioRef.current.src = currentLink;
       audioRef.current.load();
@@ -152,7 +150,7 @@ const Mp3Player = () => {
       </Link>
 
       <h1 className="text-center text-3xl font-bold text-gray-800 mb-4">
-        Select a song
+        {currentSong ? currentSong : "Select a song"}
       </h1>
       <audio
         ref={audioRef}
@@ -193,7 +191,7 @@ const Mp3Player = () => {
                 </AccordionItem>
               </li>
             );
-          })}{" "}
+          })}
           {loading && ( // 추가된 부분
             <li>
               <div className="skeleton-loader text-center my-5">Loading...</div>
