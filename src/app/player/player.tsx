@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { HomeIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, PauseIcon, PlayIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import SongData from "./songData";
 import AccordionItem from "./accoItem";
@@ -152,21 +152,19 @@ const Mp3Player = () => {
       <h1 className="text-center text-3xl font-bold text-gray-800 mb-4">
         {currentSong ? currentSong : "Select a song"}
       </h1>
-      <audio
-        ref={audioRef}
-        controls
-        className=" mb-0 w-full sm:mb-2 h-10 bg-red-200"
-        preload="auto"
-      >
-        <source src={currentLink} type="audio/mpeg" />
-      </audio>
-      <button onClick={playMusic} className="w-20 h-20 border-2 border-black">
-        play
-      </button>
-      <button onClick={pauseMusic} className="w-20 h-20 border-2 border-black">
-        pause
-      </button>
-
+      <div className="w-full p-4 bg-blue-300 rounded-lg shadow-lg">
+        <audio ref={audioRef} controls className="w-full m-3" preload="auto">
+          <source src={currentLink} type="audio/mpeg" />
+        </audio>
+        <div className=" flex justify-center items-center gap-4">
+          <button>
+            <PlayIcon onClick={playMusic} className="h-20 w-20 text-black" />
+          </button>
+          <button>
+            <PauseIcon onClick={pauseMusic} className="h-20 w-20 text-black" />
+          </button>
+        </div>
+      </div>
       <div className="mb-4">
         <ol>
           {songs.map((link, index) => {
