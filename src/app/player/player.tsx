@@ -65,6 +65,7 @@ const Mp3Player = () => {
       audioRef.current.load();
     }
     console.log(currentLink);
+    playMusic();
   }, [currentLink]);
 
   const handleToggle = (title: string, index: number) => {
