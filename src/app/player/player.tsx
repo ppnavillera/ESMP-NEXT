@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { HomeIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, PauseIcon, PlayIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import SongData from "./songData";
 import AccordionItem from "./accoItem";
 
-interface Mp3Link {
-  name: string;
-  url: string;
+interface SongObj {
+  [key: string]: string;
 }
 
 interface Song {
@@ -34,9 +33,43 @@ const Mp3Player = () => {
   const [loadingStates, setLoadingStates] = useState<{
     [key: number]: boolean;
   }>({});
+  const [songObj, setSongObj] = useState<SongObj>();
+  const [currentSong, setCurrentSong] = useState<string>();
+  const [currentLink, setCurrentLink] = useState<string>();
 
-  const handleToggle = (index: number) => {
+  const setSongsObj = () => {
+    songs.forEach((song) => {
+      const name = song.properties.Song.title[0].text.content;
+      const url = song.properties.Link.url;
+      setSongObj((prevSongs) => ({
+        ...prevSongs,
+        [name]: url,
+      }));
+    });
+  };
+
+  useEffect(() => {
+    setSongsObj();
+  }, [songs]);
+
+  const onClick = (title: string) => {
+    setCurrentSong(title);
+    if (songObj) {
+      setCurrentLink(songObj[title]);
+    }
+  };
+
+  useEffect(() => {
+    if (audioRef.current && currentLink) {
+      audioRef.current.src = currentLink;
+      audioRef.current.load();
+    }
+    console.log(currentLink);
+  }, [currentLink]);
+
+  const handleToggle = (title: string, index: number) => {
     setOpenIndex(openIndex === index ? null : index);
+    onClick(title);
   };
 
   const handleLoadingChange = (index: number, isLoading: boolean) => {
@@ -79,10 +112,6 @@ const Mp3Player = () => {
     }
   }, [page]);
 
-  useEffect(() => {
-    console.log(songs);
-  }, [songs]);
-
   const handleObserver = (entries: IntersectionObserverEntry[]) => {
     const target = entries[0];
     if (target.isIntersecting && !loading && hasMore) {
@@ -106,6 +135,14 @@ const Mp3Player = () => {
     };
   }, [loading, hasMore]);
 
+  const playMusic = (): void => {
+    audioRef.current?.play();
+  };
+
+  const pauseMusic = (): void => {
+    audioRef.current?.pause();
+  };
+
   return (
     <div className=" mx-auto bg-white p-6 rounded-lg shadow-lg max-w-screen-xl ">
       <Link href="/">
@@ -113,13 +150,22 @@ const Mp3Player = () => {
       </Link>
 
       <h1 className="text-center text-3xl font-bold text-gray-800 mb-4">
-        Select a song
+        {currentSong ? currentSong : "Select a song"}
       </h1>
-
+      <div className="w-full p-4 bg-blue-300 rounded-lg shadow-lg">
+        <audio ref={audioRef} controls className="w-full m-3" preload="auto">
+          <source src={currentLink} type="audio/mpeg" />
+        </audio>
+        <div className=" flex justify-center items-center gap-4">
+          <button>
+            <PlayIcon onClick={playMusic} className="h-20 w-20 text-black" />
+          </button>
+          <button>
+            <PauseIcon onClick={pauseMusic} className="h-20 w-20 text-black" />
+          </button>
+        </div>
+      </div>
       <div className="mb-4">
-        <label htmlFor="mp3-select" className="sr-only">
-          MP3 파일을 선택하세요:
-        </label>
         <ol>
           {songs.map((link, index) => {
             const name = link.properties.Song.title[0].text.content;
@@ -127,11 +173,11 @@ const Mp3Player = () => {
             return (
               <li key={index} value={name}>
                 <AccordionItem
-                  key={index}
+                  index={index}
                   title={name}
                   isOpen={openIndex === index}
-                  onToggle={() => handleToggle(index)}
-                  url={url}
+                  onToggle={handleToggle}
+                  // url={url}
                   isLoading={loadingStates[index] || false} // 로딩 상태 전달
                 >
                   <SongData
@@ -143,7 +189,7 @@ const Mp3Player = () => {
                 </AccordionItem>
               </li>
             );
-          })}{" "}
+          })}
           {loading && ( // 추가된 부분
             <li>
               <div className="skeleton-loader text-center my-5">Loading...</div>
