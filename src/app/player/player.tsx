@@ -173,6 +173,7 @@ const Mp3Player = () => {
           {songs.map((link, index) => {
             const name = link.properties.Song.title[0].text.content;
             const url = link.properties.Link.url;
+            console.log(link.properties);
             return (
               <li key={index} value={name}>
                 <AccordionItem

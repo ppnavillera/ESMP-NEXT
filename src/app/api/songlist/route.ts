@@ -16,6 +16,12 @@ export async function GET(request: Request) {
       database_id: NOTION_DATABASE_ID,
       start_cursor: startCursor,
       page_size: limit, // 한 번에 불러올 데이터 수를 제한
+      sorts: [
+        {
+          property: "ID", // ID 속성을 기준으로 정렬
+          direction: "ascending", // 오름차순 정렬
+        },
+      ],
     });
 
     return new Response(
