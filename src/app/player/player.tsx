@@ -71,7 +71,7 @@ const Mp3Player = () => {
 
   const handleToggle = (title: string, index: number) => {
     setOpenIndex(openIndex === index ? null : index);
-    onClick(title);
+    // onClick(title);
   };
 
   const handleLoadingChange = (index: number, isLoading: boolean) => {
@@ -180,6 +180,7 @@ const Mp3Player = () => {
                   title={name}
                   isOpen={openIndex === index}
                   onToggle={handleToggle}
+                  onClick={onClick}
                   // url={url}
                   isLoading={loadingStates[index] || false} // 로딩 상태 전달
                 >
