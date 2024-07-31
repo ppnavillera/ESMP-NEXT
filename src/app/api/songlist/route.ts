@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       sorts: [
         {
           property: "ID", // ID 속성을 기준으로 정렬
-          direction: "ascending", // 오름차순 정렬
+          direction: "descending", // 오름차순 정렬
         },
       ],
     });
