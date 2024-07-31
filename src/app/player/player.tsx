@@ -5,6 +5,7 @@ import { HomeIcon, PauseIcon, PlayIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import SongData from "./songData";
 import AccordionItem from "./accoItem";
+import Custom from "./cust";
 
 interface SongObj {
   [key: string]: string;
@@ -70,7 +71,7 @@ const Mp3Player = () => {
 
   const handleToggle = (title: string, index: number) => {
     setOpenIndex(openIndex === index ? null : index);
-    onClick(title);
+    // onClick(title);
   };
 
   const handleLoadingChange = (index: number, isLoading: boolean) => {
@@ -166,6 +167,7 @@ const Mp3Player = () => {
           </button>
         </div>
       </div>
+      {/* <Custom link={currentLink} /> */}
       <div className="mb-4">
         <ol>
           {songs.map((link, index) => {
@@ -178,6 +180,7 @@ const Mp3Player = () => {
                   title={name}
                   isOpen={openIndex === index}
                   onToggle={handleToggle}
+                  onClick={onClick}
                   // url={url}
                   isLoading={loadingStates[index] || false} // 로딩 상태 전달
                 >

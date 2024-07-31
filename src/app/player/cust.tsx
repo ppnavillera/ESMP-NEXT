@@ -1,7 +1,11 @@
 import React from "react";
 import useAudio from "./useAudio";
 
-const Custom = () => {
+interface Link {
+  link: string;
+}
+
+const Custom = ({ link }: Link) => {
   const {
     audioRef,
     isPlaying,
@@ -13,10 +17,10 @@ const Custom = () => {
     handleSeek,
     formatTime,
     src,
-  } = useAudio("path/to/your-audio-file.mp3");
+  } = useAudio(link);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center  bg-gray-100">
       <div className="w-full max-w-md p-4 bg-white rounded-lg shadow-lg">
         <audio
           ref={audioRef}

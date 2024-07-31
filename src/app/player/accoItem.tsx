@@ -7,6 +7,7 @@ interface AccordionItemProps {
   title: string;
   isOpen: boolean;
   onToggle: (title: string, key: number) => void;
+  onClick: (title: string) => void;
   // url: string;
   isLoading: boolean;
   children?: React.ReactNode;
@@ -18,6 +19,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
   children,
   isOpen,
   onToggle,
+  onClick,
   // url,
   isLoading,
 }) => {
@@ -48,20 +50,25 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
 
   return (
     <div className="border-b drop-shadow-lg">
-      <button
+      <div
         className="w-full flex-row justify-between items-center p-2 sm:p-4 bg-gray-100 drop-shadow-md rounded-lg"
-        onClick={() => onToggle(title, index)}
         aria-expanded={isOpen}
       >
-        <div className="p-2 w-full flex justify-between items-center sm:p-4 ">
+        <div className="p-1 w-full flex justify-between items-center sm:p-2">
           <div className="flex-grow text-center">
-            <span>{title}</span>
+            <span
+              className="hover:cursor-pointer"
+              onClick={() => onClick(title)}
+            >
+              {title}
+            </span>
             <br />
           </div>
           <span
-            className={`transform transition-transform duration-200 ${
+            className={`hover:cursor-pointer transform transition-transform duration-200 ${
               isOpen ? "-rotate-90" : "rotate-0"
             }`}
+            onClick={() => onToggle(title, index)}
           >
             <svg
               aria-hidden="true"
@@ -71,6 +78,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
               role="presentation"
               viewBox="0 0 24 24"
               width="1em"
+              className="text-xl"
             >
               <path
                 d="M15.5 19l-7-7 7-7"
@@ -91,7 +99,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
           <source src={url} type="audio/mp3" />
           Your browser does not support the audio element.
         </audio> */}
-      </button>
+      </div>
       <div
         ref={contentRef}
         style={{ height }}
