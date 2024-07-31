@@ -57,7 +57,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
         <div className="p-1 w-full flex justify-between items-center sm:p-2">
           <div className="flex-grow text-center">
             <span
-              className="hover:cursor-pointer"
+              className="hover:cursor-pointer text-sm sm:text-base"
               onClick={() => onClick(title)}
             >
               {title}
