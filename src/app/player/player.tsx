@@ -5,6 +5,7 @@ import { HomeIcon, PauseIcon, PlayIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import SongData from "./songData";
 import AccordionItem from "./accoItem";
+import Custom from "./cust";
 
 interface SongObj {
   [key: string]: string;
@@ -166,6 +167,7 @@ const Mp3Player = () => {
           </button>
         </div>
       </div>
+      {/* <Custom link={currentLink} /> */}
       <div className="mb-4">
         <ol>
           {songs.map((link, index) => {
