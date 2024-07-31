@@ -1,7 +1,11 @@
 import React from "react";
 import useAudio from "./useAudio";
 
-const Custom = ({ link }) => {
+interface Link {
+  link: string;
+}
+
+const Custom = ({ link }: Link) => {
   const {
     audioRef,
     isPlaying,
