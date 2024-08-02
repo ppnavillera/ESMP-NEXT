@@ -155,15 +155,21 @@ const Mp3Player = () => {
         {currentSong ? currentSong : "Select a song"}
       </h1>
       <div className="w-full p-4 bg-blue-300 rounded-lg shadow-lg">
-        <audio ref={audioRef} controls className="w-full m-3" preload="auto">
+        <audio ref={audioRef} controls className="w-full my-3" preload="auto">
           <source src={currentLink} type="audio/mpeg" />
         </audio>
         <div className=" flex justify-center items-center gap-4">
           <button>
-            <PlayIcon onClick={playMusic} className="h-20 w-20 text-black" />
+            <PlayIcon
+              onClick={playMusic}
+              className="h-10 w-10 sm:h-20 sm:w-20 text-black"
+            />
           </button>
           <button>
-            <PauseIcon onClick={pauseMusic} className="h-20 w-20 text-black" />
+            <PauseIcon
+              onClick={pauseMusic}
+              className="h-10 w-10 sm:h-20 sm:w-20 text-black"
+            />
           </button>
         </div>
       </div>
@@ -173,6 +179,7 @@ const Mp3Player = () => {
           {songs.map((link, index) => {
             const name = link.properties.Song.title[0].text.content;
             const url = link.properties.Link.url;
+            console.log(link.properties);
             return (
               <li key={index} value={name}>
                 <AccordionItem
