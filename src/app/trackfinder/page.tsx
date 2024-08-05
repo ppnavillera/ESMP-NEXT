@@ -2,8 +2,19 @@
 
 import { useEffect, useState } from "react";
 
+interface Song {
+  properties: {
+    Title: {
+      title: {
+        text: {
+          content: string;
+        };
+      }[];
+    };
+  };
+}
 export default function TrackFinder() {
-  const [data, setData] = useState<[]>([]);
+  const [data, setData] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [properties, setProperties] = useState({});
 
@@ -26,7 +37,7 @@ export default function TrackFinder() {
     fetchTracks();
   }, []);
 
-  const addNewProperty = (key, value) => {
+  const addNewProperty = (key: string, value: any) => {
     setProperties((prevState) => {
       return {
         ...prevState,
@@ -35,6 +46,14 @@ export default function TrackFinder() {
     });
   };
 
+  interface Option {
+    name: string;
+    color: string;
+  }
+
+  interface Properties {
+    [key: string]: string | { [name: string]: string };
+  }
   const fetchProps = async () => {
     const resp = await fetch("/api/properties", {
       method: "GET",
@@ -48,9 +67,9 @@ export default function TrackFinder() {
     for (const key in props) {
       //   console.log(key);
       if (props[key].type === "multi_select") {
-        let values = {};
+        let values: { [name: string]: string } = {};
         const options = props[key].multi_select.options;
-        options.forEach((element) => {
+        options.forEach((element: Option) => {
           values[element.name] = element.color;
         });
         // console.log(props[key].multi_select.options);
