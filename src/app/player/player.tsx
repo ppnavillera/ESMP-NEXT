@@ -29,6 +29,7 @@ const Mp3Player = () => {
   const [startCursor, setStartCursor] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
+
   const limit = 15; // 한 번에 불러올 데이터 수
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [loadingStates, setLoadingStates] = useState<{
@@ -179,7 +180,7 @@ const Mp3Player = () => {
           {songs.map((link, index) => {
             const name = link.properties.Song.title[0].text.content;
             const url = link.properties.Link.url;
-            console.log(link.properties);
+            // console.log(link.properties);
             return (
               <li key={index} value={name}>
                 <AccordionItem

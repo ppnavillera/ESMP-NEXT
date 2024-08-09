@@ -11,6 +11,14 @@ export default function Home() {
           <li>
             <Link
               className="border border-black px-4 py-2 rounded-lg hover:bg-black hover:text-white transition duration-300"
+              href="/trackfinder"
+            >
+              Track Finder
+            </Link>
+          </li>
+          <li>
+            <Link
+              className="border border-black px-4 py-2 rounded-lg hover:bg-black hover:text-white transition duration-300"
               href="/player"
             >
               MP3 플레이어
