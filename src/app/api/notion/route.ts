@@ -46,43 +46,86 @@ export async function POST(request: Request): Promise<Response> {
 
     const songData = data.properties;
 
-    const props = [];
-    // props.push(songData.Title.title[0].text.content);
+    // 순서를 정의하는 배열
+    const order = [
+      "date",
+      "sold",
+      "멜로디메이커",
+      "포스트프로덕션",
+      "스케치트랙메이커",
+      "마스터트랙메이커",
+      "작사",
+      "코러스",
+      "가이드비",
+    ];
 
-    // console.log(songData);
+    // 프로퍼티를 저장할 배열
+    let props = [];
+
+    let dateSold = [];
+
+    // songData를 순회하며 props 배열에 값을 푸시
     for (const key in songData) {
       if (songData.hasOwnProperty(key)) {
-        let propType = songData[key].type;
-        // props.push(songData[key].type);
-        if (propType === "checkbox") {
+        if (key === "확정") {
           if (songData[key].checkbox === true) {
-            props.push(`${key}: O`);
+            dateSold.push({ sold: true });
           } else {
-            props.push(`${key}: x`);
+            dateSold.push({ sold: false });
           }
-        } else if (propType === "select") {
-          props.push(`${key}: ${songData[key].select.name}`);
-        } else if (propType === "multi_select") {
+        } else if (key === "완성일") {
+          dateSold.push({ date: `${songData[key].date.start}` });
+        } else if (key === "멜로디메이커") {
           const multiSelect = songData[key].multi_select;
           const names = multiSelect.map((item: { name: any }) => {
             return item.name;
           });
-          props.push(`${key}: ${names}`);
-        } else if (propType === "number") {
-          props.push(`${key}: ${songData[key].number}`);
-        } else if (propType === "date") {
-          props.push(`${key}: ${songData[key].date.start}`);
-        } else if (propType === "rich_text") {
-          if (songData[key].rich_text[0]) {
-            props.push(`${key}: ${songData[key].rich_text[0].text.content}`);
-          } else {
-            props.push(`${key}: X`);
-          }
+          props.push({ key: "멜로디메이커", value: `Ⓜ: ${names}` });
+        } else if (key === "포스트프로덕션") {
+          const multiSelect = songData[key].multi_select;
+          const names = multiSelect.map((item: { name: any }) => {
+            return item.name;
+          });
+          props.push({ key: "포스트프로덕션", value: `Ⓟ: ${names}` });
+        } else if (key === "스케치트랙메이커") {
+          const multiSelect = songData[key].multi_select;
+          const names = multiSelect.map((item: { name: any }) => {
+            return item.name;
+          });
+          props.push({ key: "스케치트랙메이커", value: `Ⓢ: ${names}` });
+        } else if (key === "마스터트랙메이커") {
+          const multiSelect = songData[key].multi_select;
+          const names = multiSelect.map((item: { name: any }) => {
+            return item.name;
+          });
+
+          props.push({ key: "마스터트랙메이커", value: `Ⓣ: ${names}` });
+        } else if (key === "작사") {
+          const multiSelect = songData[key].multi_select;
+          const names = multiSelect.map((item: { name: any }) => {
+            return item.name;
+          });
+
+          props.push({ key: "작사", value: `Ⓛ: ${names}` });
+        } else if (key === "코러스") {
+          const multiSelect = songData[key].multi_select;
+          const names = multiSelect.map((item: { name: any }) => {
+            return item.name;
+          });
+          props.push({ key: "코러스", value: `Ⓒ: ${names}` });
+        } else if (key === "가이드비") {
+          props.push({ key: "가이드비", value: `Ⓖ: ${songData[key].number}` });
         }
       }
     }
-    // console.log(songData);
-    return Response.json(props);
+
+    // 원하는 순서대로 props 배열을 정렬
+    props.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+
+    console.log(props);
+    console.log(dateSold);
+
+    return Response.json({ props, dateSold });
   } catch (error) {
     if (error instanceof Error) {
       return Response.json({ error: error.message }, { status: 500 });
@@ -131,7 +174,6 @@ export async function GET(request: Request): Promise<Response> {
       has_more = response.has_more; // has_more 업데이트
       next_cursor = response.next_cursor; // next_cursor 업데이트
     }
-
     return Response.json(result);
   } catch (error) {
     if (error instanceof Error) {

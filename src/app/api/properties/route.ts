@@ -14,7 +14,7 @@ export async function GET(request: Request): Promise<Response> {
     const response = await notion.databases.retrieve({
       database_id: NOTION_DEMO_DATABASE_ID,
     });
-    console.log(response);
+    // console.log(response);
 
     // if (response.results.length === 0 && result.length === 0) {
     //   return Response.json(
@@ -29,7 +29,6 @@ export async function GET(request: Request): Promise<Response> {
     // }
 
     //   console.log(response.results);}
-
     return Response.json(response);
   } catch (error) {
     if (error instanceof Error) {

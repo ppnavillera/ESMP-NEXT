@@ -151,7 +151,6 @@ const Mp3Player = () => {
       <Link href="/">
         <HomeIcon className="h-10 w-10 text-gray-500 cursor-pointer" />
       </Link>
-
       <h1 className="text-center text-3xl font-bold text-gray-800 mb-4">
         {currentSong ? currentSong : "Select a song"}
       </h1>
