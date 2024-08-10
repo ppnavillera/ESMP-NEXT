@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { HomeIcon, PauseIcon, PlayIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import SongData from "./songData";
-import AccordionItem from "./accoItem";
-import Custom from "./cust";
+import AccordionItem from "./AccordionItem";
+import Custom from "./Custom";
 
 interface SongObj {
   [key: string]: string;
@@ -22,7 +22,7 @@ interface Song {
   };
 }
 
-const Mp3Player = () => {
+const Player = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -213,4 +213,4 @@ const Mp3Player = () => {
   );
 };
 
-export default Mp3Player;
+export default Player;
