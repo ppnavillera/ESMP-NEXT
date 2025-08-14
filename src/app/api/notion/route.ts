@@ -46,6 +46,7 @@ export async function POST(request: Request): Promise<Response> {
 
     const songData = data.properties;
 
+    // console.log(songData);
     // 순서를 정의하는 배열
     const order = [
       "date",
@@ -73,6 +74,10 @@ export async function POST(request: Request): Promise<Response> {
           } else {
             dateSold.push({ sold: false });
           }
+        } else if (key === "성별") {
+          const select = songData[key].select;
+          // console.log(select);
+          props.push({ key: "성별", value: `${select.name}` });
         } else if (key === "완성일") {
           dateSold.push({ date: `${songData[key].date.start}` });
         } else if (key === "멜로디메이커") {
@@ -122,8 +127,8 @@ export async function POST(request: Request): Promise<Response> {
     // 원하는 순서대로 props 배열을 정렬
     props.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
 
-    console.log(props);
-    console.log(dateSold);
+    // console.log(props);
+    // console.log(dateSold);
 
     return Response.json({ props, dateSold });
   } catch (error) {
