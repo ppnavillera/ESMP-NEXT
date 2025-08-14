@@ -5,7 +5,7 @@ import {
   CheckCircleIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import {
   RiCalendarLine,
   RiCheckboxCircleFill,
@@ -17,19 +17,24 @@ import {
 interface SongDataProps {
   name: string;
   onLoadingChange: (loading: boolean) => void;
+  onColorChange: Dispatch<SetStateAction<string>>;
 }
 
-export default function SongData({ name, onLoadingChange }: SongDataProps) {
+export default function SongData({
+  name,
+  onLoadingChange,
+  onColorChange,
+}: SongDataProps) {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [soldDate, setSoldDate] = useState<any[]>([]);
 
-  useEffect(() => {
-    console.log(soldDate);
+  // useEffect(() => {
+  //   console.log(soldDate);
 
-    console.log(results);
-  });
+  //   console.log(results);
+  // });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,6 +71,7 @@ export default function SongData({ name, onLoadingChange }: SongDataProps) {
         setResults(props);
         setLoading(false);
         onLoadingChange(false); // 로딩 완료를 부모 컴포넌트에 알림
+        console.log(props);
       } catch (error: any) {
         setError(error.message);
         setResults(["일치하는 정보가 없습니다."]);
@@ -113,11 +119,17 @@ export default function SongData({ name, onLoadingChange }: SongDataProps) {
 
           <br />
 
-          {results.map((props, index) => (
-            <li key={index} className="ml-5">
-              {props.value}
-            </li>
-          ))}
+          {results.map((props, index) => {
+            console.log();
+            if (props.key === "성별") {
+              return;
+            }
+            return (
+              <li key={index} className="ml-5">
+                {props.value}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <h2>로딩중... </h2>

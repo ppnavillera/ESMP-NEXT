@@ -11,6 +11,7 @@ interface AccordionItemProps {
   // url: string;
   isLoading: boolean;
   children?: React.ReactNode;
+  color: string;
 }
 
 const AccordionItem: React.FC<AccordionItemProps> = ({
@@ -22,11 +23,13 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
   onClick,
   // url,
   isLoading,
+  color,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState("0px");
   const [opacity, setOpacity] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [isColor, setIsColor] = useState("");
 
   const updateHeight = () => {
     if (isOpen) {
