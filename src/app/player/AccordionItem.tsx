@@ -1,6 +1,6 @@
-// components/AccordionItem.jsx
 "use client";
 import React, { useRef, useEffect, useState } from "react";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 interface AccordionItemProps {
   index: number;
@@ -8,10 +8,10 @@ interface AccordionItemProps {
   isOpen: boolean;
   onToggle: (title: string, key: number) => void;
   onClick: (title: string) => void;
-  // url: string;
   isLoading: boolean;
   children?: React.ReactNode;
-  color: string;
+  color?: string;
+  isActive?: boolean;
 }
 
 const AccordionItem: React.FC<AccordionItemProps> = ({
@@ -21,20 +21,18 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
   isOpen,
   onToggle,
   onClick,
-  // url,
   isLoading,
   color,
+  isActive = false,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState("0px");
   const [opacity, setOpacity] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [isColor, setIsColor] = useState("");
 
   const updateHeight = () => {
     if (isOpen) {
       if (isLoading) {
-        setHeight("50px"); // 로딩 중일 때 고정된 높이 설정
+        setHeight("60px");
       } else {
         if (contentRef.current) {
           setHeight(`${contentRef.current.scrollHeight}px`);
@@ -49,72 +47,128 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
 
   useEffect(() => {
     updateHeight();
-  }, [isOpen, children]);
+  }, [isOpen, children, isLoading]);
 
   return (
-    <div className="border-b drop-shadow-lg">
+    <div className="mb-3 relative group">
       <div
-        className="w-full flex-row justify-between items-center p-2 sm:p-4 bg-gray-100 drop-shadow-md rounded-lg"
-        aria-expanded={isOpen}
+        className={`
+          relative overflow-hidden rounded-2xl transition-all duration-300
+          ${
+            isActive
+              ? "bg-gradient-to-r from-purple-500/20 to-purple-700/20 border border-purple-500/50 shadow-lg shadow-purple-500/20"
+              : "bg-white/5 border border-white/10 hover:bg-white/8 hover:border-purple-500/30"
+          }
+        `}
       >
-        <div className="p-1 w-full flex justify-between items-center sm:p-2">
-          <div className="flex-grow text-center">
-            <span
-              className="hover:cursor-pointer text-sm sm:text-base"
+        {/* Animated gradient overlay on hover */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent animate-shimmer" />
+        </div>
+
+        {/* Main content row */}
+        <div className="relative z-10 p-4 flex items-center justify-between">
+          {/* Left section with number badge */}
+          <div className="flex items-center gap-4">
+            <div
+              className={`
+              w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300
+              ${
+                isActive
+                  ? "bg-gradient-to-br from-purple-500 to-purple-700 text-white shadow-lg shadow-purple-500/50"
+                  : "bg-white/10 text-white/70 group-hover:bg-white/15"
+              }
+            `}
+            >
+              {index + 1}
+            </div>
+
+            {/* Song title - clickable */}
+            <button
               onClick={() => onClick(title)}
+              className="text-left transition-all duration-200 hover:translate-x-1"
             >
-              {title}
-            </span>
-            <br />
+              <h3
+                className={`
+                font-medium transition-colors duration-200
+                ${
+                  isActive
+                    ? "text-white"
+                    : "text-white/90 group-hover:text-white"
+                }
+              `}
+              >
+                {title}
+              </h3>
+              <p className="text-xs text-white/50 mt-0.5">Click to play</p>
+            </button>
           </div>
-          <span
-            className={`hover:cursor-pointer transform transition-transform duration-200 ${
-              isOpen ? "-rotate-90" : "rotate-0"
-            }`}
+
+          {/* Right section with expand button */}
+          <button
             onClick={() => onToggle(title, index)}
+            className={`
+              w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300
+              ${
+                isOpen
+                  ? "bg-purple-500/20 text-purple-400"
+                  : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+              }
+            `}
           >
-            <svg
-              aria-hidden="true"
-              fill="none"
-              focusable="false"
-              height="1em"
-              role="presentation"
-              viewBox="0 0 24 24"
-              width="1em"
-              className="text-xl"
-            >
-              <path
-                d="M15.5 19l-7-7 7-7"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.5"
-              ></path>
-            </svg>
-          </span>
+            <ChevronDownIcon
+              className={`
+                w-5 h-5 transition-transform duration-300
+                ${isOpen ? "rotate-180" : "rotate-0"}
+              `}
+            />
+          </button>
         </div>
-        {/* <audio
-          ref={audioRef}
-          controls
-          autoPlay={false}
-          className=" mb-0 w-full sm:mb-2"
-        >
-          <source src={url} type="audio/mp3" />
-          Your browser does not support the audio element.
-        </audio> */}
-      </div>
-      <div
-        ref={contentRef}
-        style={{ height }}
-        className={`overflow-hidden transition-height duration-200 ease-in-out bg-gray-100`}
-      >
+
+        {/* Expandable content */}
         <div
-          className={`p-4 transition-opacity duration-200 ease-in-out`}
-          style={{ opacity }}
+          ref={contentRef}
+          style={{ height, opacity }}
+          className="overflow-hidden transition-all duration-300 ease-out"
         >
-          {children}
+          <div className="px-4 pb-4">
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4" />
+
+            {/* Content wrapper with glass effect */}
+            <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-white/5">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-2">
+                  <div className="flex gap-2">
+                    <div
+                      className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    />
+                  </div>
+                  <span className="ml-3 text-white/50 text-sm">
+                    Loading data...
+                  </span>
+                </div>
+              ) : (
+                children
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Glow effect when active */}
+      {isActive && (
+        <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-purple-700/20 rounded-2xl blur-xl -z-10 animate-pulse" />
+      )}
     </div>
   );
 };
