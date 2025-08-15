@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Button from "./Button";
+import Property from "./Property";
+import ToggleSwitch from "./Property";
+import AppLayout from "@/components/AppLayout";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 interface Song {
   properties: {
@@ -13,10 +18,19 @@ interface Song {
     };
   };
 }
+
+interface Option {
+  name: string;
+  color: string;
+}
+
+interface Properties {
+  [key: string]: string | { [name: string]: string };
+}
 export default function TrackFinder() {
   const [data, setData] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [properties, setProperties] = useState({});
+  const [properties, setProperties] = useState<Properties>({});
 
   const fetchTracks = async () => {
     setIsLoading(true);
@@ -29,7 +43,7 @@ export default function TrackFinder() {
     const respData = await resp.json();
     setData(respData);
     setIsLoading(false);
-    // console.log(respData);
+    console.log(respData);
   };
 
   useEffect(() => {
@@ -46,14 +60,6 @@ export default function TrackFinder() {
     });
   };
 
-  interface Option {
-    name: string;
-    color: string;
-  }
-
-  interface Properties {
-    [key: string]: string | { [name: string]: string };
-  }
   const fetchProps = async () => {
     const resp = await fetch("/api/properties", {
       method: "GET",
@@ -62,42 +68,125 @@ export default function TrackFinder() {
       },
     });
     const respData = await resp.json();
-    console.log(respData.properties);
+    // console.log(respData.properties);
     const props = respData.properties;
-    for (const key in props) {
-      //   console.log(key);
-      if (props[key].type === "multi_select") {
-        let values: { [name: string]: string } = {};
-        const options = props[key].multi_select.options;
-        options.forEach((element: Option) => {
-          values[element.name] = element.color;
-        });
-        // console.log(props[key].multi_select.options);
-        // console.log(values);
-        addNewProperty(key, values);
-      } else {
-        addNewProperty(key, props[key].type);
+    for (const key of order) {
+      if (key in props) {
+        // console.log(props);
+        if (key === "영어 제목" || key === "가이드비" || key === "Title") {
+          continue;
+        }
+
+        if (props[key].type === "multi_select") {
+          let values: { [name: string]: string } = {};
+          const options = props[key].multi_select.options;
+          options.forEach((element: Option) => {
+            values[element.name] = element.color;
+          });
+          addNewProperty(key, values);
+        } else if (props[key].type === "select") {
+          let values: { [name: string]: string } = {};
+          const options = props[key].select.options;
+          options.forEach((element: Option) => {
+            values[element.name] = element.color;
+          });
+          addNewProperty(key, values);
+        } else {
+          addNewProperty(key, props[key].type);
+        }
       }
     }
-    // console.log(properties);
   };
 
-  useEffect(() => {
-    console.log(properties);
-  }, [properties]);
+  const order = [
+    "완성일",
+    "확정",
+    "Drop",
+    "Rap",
+    "성별",
+    "인원",
+    "멜로디메이커",
+    "포스트프로덕션",
+    "스케치트랙메이커",
+    "마스터트랙메이커",
+    "작사",
+  ];
+
+  // useEffect(() => {
+  //   console.log(properties);
+  // }, [properties]);
 
   return (
-    // <select>
-    //     {data.map((item, index) => (
-    //         <option key={index}>{item}</option>
-    // </select>
-    <ol>
-      {!isLoading
-        ? data.map((song, index) => {
-            const title = song.properties.Title.title[0].text.content;
-            return <li key={index}>{title}</li>;
-          })
-        : "로딩중..."}
-    </ol>
+    <AppLayout title="Track Finder">
+      {/* Filters Section */}
+      <div className="mb-8">
+        <div className="flex items-center mb-4">
+          <MagnifyingGlassIcon className="w-5 h-5 mr-2" style={{ color: 'var(--text-secondary)' }} />
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Filters</h3>
+        </div>
+        <div className="glass-effect rounded-2xl p-6">
+          <div className="flex flex-wrap gap-4">
+            {Object.keys(properties).map((key) => {
+              const property = properties[key];
+              return <Property key={key} prop={key} type={property} />;
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Results Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Results</h3>
+          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            {!isLoading ? `${data.length} tracks found` : "Loading..."}
+          </span>
+        </div>
+        
+        <div className="glass-effect rounded-2xl p-4">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-2 border-[#667eea] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p style={{ color: 'var(--text-secondary)' }}>Loading tracks...</p>
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto scroll-container">
+              {data.length > 0 ? (
+                <div className="space-y-3">
+                  {data.map((song, index) => {
+                    const title = song.properties.Title.title[0].text.content;
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center p-4 rounded-xl transition-all duration-300 hover:border-[#667eea]/30 cursor-pointer"
+                        style={{
+                          backgroundColor: 'var(--surface-glass)',
+                          borderColor: 'var(--border-glass)',
+                        }}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center text-xs font-semibold mr-4" style={{ color: 'var(--text-primary)' }}>
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                            {title}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <MagnifyingGlassIcon className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+                  <p style={{ color: 'var(--text-secondary)' }}>No tracks found</p>
+                  <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Try adjusting your filters</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </AppLayout>
   );
 }
