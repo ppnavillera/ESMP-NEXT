@@ -39,3 +39,6 @@ next-env.d.ts
 src/app/player/cors.ts
 src/app/api/notion/route_copy.ts
 src/app/player/cors.ts
+CLAUDE.md
+CODE_REVIEW.md
+PROJECT_GUIDE.md
