@@ -101,35 +101,49 @@ const Player = () => {
   }, []);
 
   const handleToggle = useCallback((index: number) => {
-    setOpenIndex(prev => prev === index ? null : index);
+    setOpenIndex((prev) => (prev === index ? null : index));
   }, []);
 
-  const handleLoadingChange = useCallback((index: number, isLoading: boolean) => {
-    setLoadingStates((prevStates) => ({
-      ...prevStates,
-      [index]: isLoading,
-    }));
-  }, []);
+  const handleLoadingChange = useCallback(
+    (index: number, isLoading: boolean) => {
+      setLoadingStates((prevStates) => ({
+        ...prevStates,
+        [index]: isLoading,
+      }));
+    },
+    []
+  );
 
   const fetchData = async (cursor?: string, limit?: number) => {
+    if (loading) return; // 이미 로딩 중이면 중복 요청 방지
+
     setLoading(true);
     try {
-      const response = await fetch(
-        `/api/songlist?start_cursor=${cursor || ""}&limit=${limit}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const params = new URLSearchParams();
+      if (cursor) params.append("start_cursor", cursor);
+      if (limit) params.append("limit", limit.toString());
+
+      const response = await fetch(`/api/songlist?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
 
       const json = await response.json();
-      setSongs((prevSongs) => [...prevSongs, ...json.results]);
+
+      if (cursor) {
+        // 추가 데이터 로드 (무한 스크롤)
+        setSongs((prevSongs) => [...prevSongs, ...json.results]);
+      } else {
+        // 초기 데이터 로드
+        setSongs(json.results);
+      }
+
       setHasMore(json.has_more);
       setStartCursor(json.next_cursor);
     } catch (error) {
@@ -138,18 +152,28 @@ const Player = () => {
     setLoading(false);
   };
 
+  // 초기 로드
   useEffect(() => {
-    if (hasMore) {
+    fetchData(undefined, limit);
+  }, []);
+
+  // 페이지 변경 시 추가 데이터 로드
+  useEffect(() => {
+    if (page > 0 && hasMore && !loading) {
       fetchData(startCursor, limit);
     }
-  }, [page, hasMore, startCursor, limit]);
+  }, [page]);
 
-  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
-    const target = entries[0];
-    if (target.isIntersecting && !loading && hasMore) {
-      setPage((prevPage) => prevPage + 1);
-    }
-  }, [loading, hasMore]);
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const target = entries[0];
+      if (target.isIntersecting && !loading && hasMore) {
+        console.log("Loading next page..."); // 디버깅용
+        setPage((prevPage) => prevPage + 1);
+      }
+    },
+    [loading, hasMore]
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, {
@@ -259,13 +283,13 @@ const Player = () => {
     }
 
     setIsDownloading(true);
-    
+
     try {
       // API 라우트를 통해 다운로드
-      const response = await fetch('/api/download', {
-        method: 'POST',
+      const response = await fetch("/api/download", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           url: currentLink,
@@ -276,31 +300,33 @@ const Player = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '다운로드에 실패했습니다.');
+        throw new Error(errorData.error || "다운로드에 실패했습니다.");
       }
 
       // 파일 다운로드
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
+
+      const link = document.createElement("a");
       link.href = blobUrl;
       link.download = `${currentSong}.mp3`;
-      link.style.display = 'none';
-      
+      link.style.display = "none";
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Blob URL 해제
       setTimeout(() => {
         window.URL.revokeObjectURL(blobUrl);
       }, 100);
-      
+
       closeDownloadModal();
     } catch (error) {
-      console.error('Download failed:', error);
-      setPasswordError(error instanceof Error ? error.message : "다운로드에 실패했습니다.");
+      console.error("Download failed:", error);
+      setPasswordError(
+        error instanceof Error ? error.message : "다운로드에 실패했습니다."
+      );
       setIsDownloading(false);
     }
   };
@@ -311,7 +337,13 @@ const Player = () => {
     <AppLayout showNav={true}>
       {/* Album Art Section */}
       <div className="text-center mb-10">
-        <div className="w-72 h-72 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center shadow-[0_20px_60px_rgba(102,126,234,0.4)] animate-pulse-custom cursor-pointer group">
+        <div
+          className="w-72 h-72 mx-auto mb-6 rounded-3xl flex items-center justify-center animate-pulse-custom cursor-pointer group"
+          style={{
+            background: "var(--gradient-primary)",
+            boxShadow: "0 20px 60px var(--card-shadow)",
+          }}
+        >
           <div className="flex items-end justify-center gap-1 h-32">
             {[...Array(10)].map((_, i) => (
               <div
@@ -327,10 +359,15 @@ const Player = () => {
             ))}
           </div>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1
+          className="text-3xl font-bold mb-2"
+          style={{ color: "var(--text-primary)" }}
+        >
           {currentSong || "Select a Song"}
         </h1>
-        <p className="text-white/70 text-sm">Choose from playlist</p>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          Choose from playlist
+        </p>
       </div>
 
       {/* Hidden Audio Element */}
@@ -341,17 +378,33 @@ const Player = () => {
       {/* Progress Bar */}
       <div className="mb-8">
         <div
-          className="h-2 bg-white/10 rounded-full overflow-hidden cursor-pointer"
+          className="h-3 rounded-full overflow-hidden cursor-pointer border"
+          style={{
+            backgroundColor: "var(--progress-track)",
+            borderColor: "var(--border-glass)",
+          }}
           onClick={handleProgressClick}
         >
           <div
-            className="h-full bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full relative transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
+            className="h-full rounded-full relative transition-all duration-300"
+            style={{
+              width: `${progressPercent}%`,
+              background: "var(--gradient-primary)",
+            }}
           >
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_20px_rgba(102,126,234,0.8)]" />
+            <div
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-lg"
+              style={{
+                backgroundColor: "var(--gradient-text)",
+                boxShadow: "0 0 20px var(--card-shadow)",
+              }}
+            />
           </div>
         </div>
-        <div className="flex justify-between mt-2 text-xs text-white/70">
+        <div
+          className="flex justify-between mt-2 text-xs"
+          style={{ color: "var(--text-secondary)" }}
+        >
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -359,92 +412,146 @@ const Player = () => {
 
       {/* Control Buttons */}
       <div className="flex justify-center items-center gap-6 mb-10">
-        <button 
+        <button
           onClick={restartCurrentSong}
           className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
           title="처음부터 재생"
         >
-          <ArrowPathIcon className="w-6 h-6 text-white" />
+          <ArrowPathIcon
+            className="w-6 h-6"
+            style={{ color: "var(--text-primary)" }}
+          />
         </button>
         <button
           onClick={playPrevious}
           className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
         >
-          <ChevronLeftIcon className="w-6 h-6 text-white" />
+          <ChevronLeftIcon
+            className="w-6 h-6"
+            style={{ color: "var(--text-primary)" }}
+          />
         </button>
         <button
           onClick={togglePlayPause}
-          className="w-20 h-20 rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-[0_10px_30px_rgba(102,126,234,0.5)] hover:shadow-[0_0_40px_rgba(102,126,234,0.5)]"
+          className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+          style={{
+            background: "var(--gradient-primary)",
+            boxShadow: "0 10px 30px var(--card-shadow)",
+          }}
         >
           {isPlaying ? (
-            <PauseIcon className="w-8 h-8 text-white" />
+            <PauseIcon
+              className="w-8 h-8"
+              style={{ color: "var(--text-primary)" }}
+            />
           ) : (
-            <PlayIcon className="w-8 h-8 text-white ml-1" />
+            <PlayIcon
+              className="w-8 h-8 ml-1"
+              style={{ color: "var(--text-primary)" }}
+            />
           )}
         </button>
         <button
           onClick={playNext}
           className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
         >
-          <ChevronRightIcon className="w-6 h-6 text-white" />
+          <ChevronRightIcon
+            className="w-6 h-6"
+            style={{ color: "var(--text-primary)" }}
+          />
         </button>
-        <button 
+        <button
           onClick={openDownloadModal}
           className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
           title="다운로드"
         >
-          <MusicalNoteIcon className="w-6 h-6 text-white" />
+          <MusicalNoteIcon
+            className="w-6 h-6"
+            style={{ color: "var(--text-primary)" }}
+          />
         </button>
       </div>
 
       {/* Playlist Section */}
       <div>
-        <h2 className="text-lg font-semibold text-white mb-5 flex items-center">
+        <h2
+          className="text-lg font-semibold mb-5 flex items-center"
+          style={{ color: "var(--text-primary)" }}
+        >
           Playlist
-          <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent ml-4" />
+          <div
+            className="flex-1 h-px bg-gradient-to-r to-transparent ml-4"
+            style={{
+              background: `linear-gradient(to right, var(--playlist-divider), transparent)`,
+            }}
+          />
         </h2>
-        <div className="max-h-96 overflow-y-auto scroll-container pr-2">
+        <div className="max-h-96 overflow-y-auto scroll-container pr-2 pt-1">
           {songs.map((song, index) => {
             const name = song.properties.Song.title[0].text.content;
             const isActive = currentSongIndex === index;
             return (
               <div key={index}>
                 <div
-                  className={`
-                        relative flex items-center p-4 mb-3 rounded-2xl cursor-pointer
-                        transition-all duration-300 playlist-item-slide
-                        ${
-                          isActive
-                            ? "bg-gradient-to-r from-[#667eea]/20 to-[#764ba2]/20 border border-[#667eea]/50"
-                            : "bg-white/5 border border-white/5"
-                        }
-                      `}
+                  className="relative flex items-center p-4 mb-3 rounded-2xl cursor-pointer transition-all duration-300 playlist-item-slide border"
+                  style={{
+                    background: isActive
+                      ? "var(--playlist-item-active)"
+                      : "var(--playlist-item-bg)",
+                    borderColor: isActive
+                      ? "rgba(96, 165, 250, 0.4)"
+                      : "var(--border-glass)",
+
+                    boxShadow: isActive
+                      ? "0 4px 20px var(--card-shadow)"
+                      : "0 2px 10px var(--card-shadow)",
+                    // transform: isActive ? "translateY(-1px)" : "translateY(0)",
+                  }}
                 >
                   <div
                     onClick={() => onClick(name, index)}
                     className="flex items-center flex-1"
                   >
                     <div
-                      className={`
-                              w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold mr-4
-                              ${
-                                isActive
-                                  ? "bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white"
-                                  : "bg-white/10 text-white/70"
-                              }
-                            `}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold mr-4"
+                      style={{
+                        background: isActive
+                          ? "var(--gradient-primary)"
+                          : "var(--surface-glass)",
+                      }}
                     >
-                      {index + 1}
+                      <span
+                        style={{
+                          color: isActive
+                            ? "var(--text-primary)"
+                            : "var(--text-secondary)",
+                        }}
+                      >
+                        {index + 1}
+                      </span>
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm font-medium text-white mb-1">
+                      <div
+                        className="text-sm font-medium mb-1"
+                        style={{ color: "var(--text-primary)" }}
+                      >
                         {name}
                       </div>
-                      <div className="text-xs text-white/50">Artist Name</div>
+                      <div
+                        className="text-xs"
+                        style={{ color: "var(--text-tertiary)" }}
+                      >
+                        Artist Name
+                      </div>
                     </div>
-                    <div className="text-xs text-white/50">3:45</div>
+                    <div
+                      className="text-xs"
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
+                      3:45
+                    </div>
                   </div>
-                  
+
                   {/* Info Button */}
                   <button
                     onClick={(e) => {
@@ -454,12 +561,13 @@ const Player = () => {
                     className="ml-2 w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-300"
                   >
                     <svg
-                      className={`w-4 h-4 text-white/70 transition-transform duration-300 ${
+                      className={`w-4 h-4 transition-transform duration-300 ${
                         openIndex === index ? "rotate-180" : ""
                       }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      style={{ color: "var(--text-secondary)" }}
                     >
                       <path
                         strokeLinecap="round"
@@ -470,7 +578,7 @@ const Player = () => {
                     </svg>
                   </button>
                 </div>
-                
+
                 {/* Accordion for SongData */}
                 {openIndex === index && (
                   <div className="mb-3 p-4 glass-effect rounded-xl shadow-xl border border-white/20">
@@ -486,14 +594,18 @@ const Player = () => {
             );
           })}
           {loading && (
-            <div className="p-4 rounded-2xl skeleton-loading text-center text-white/50">
+            <div
+              className="p-4 rounded-2xl skeleton-loading text-center"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Loading more songs...
             </div>
           )}
+
+          {/* Infinite Scroll Observer - 스크롤 컨테이너 안에 위치 */}
+          {hasMore && <div id="observer" className="h-1" />}
         </div>
       </div>
-
-      <div id="observer" className="h-1" />
 
       {/* Download Modal */}
       {showDownloadModal && (
@@ -501,15 +613,28 @@ const Player = () => {
           <div className="glass-effect rounded-2xl p-6 w-full max-w-md shadow-2xl border border-white/20">
             <div className="text-center mb-6">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center">
-                <MusicalNoteIcon className="w-8 h-8 text-white" />
+                <MusicalNoteIcon
+                  className="w-8 h-8"
+                  style={{ color: "var(--text-primary)" }}
+                />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">곡 다운로드</h3>
-              <p className="text-white/70 text-sm">{currentSong}</p>
+              <h3
+                className="text-xl font-bold mb-2"
+                style={{ color: "var(--text-primary)" }}
+              >
+                곡 다운로드
+              </h3>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                {currentSong}
+              </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">
+                <label
+                  className="block text-sm font-medium mb-2"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   비밀번호 입력
                 </label>
                 <input
@@ -519,9 +644,14 @@ const Player = () => {
                     setPasswordInput(e.target.value);
                     setPasswordError("");
                   }}
-                  onKeyPress={(e) => e.key === 'Enter' && handleDownload()}
+                  onKeyPress={(e) => e.key === "Enter" && handleDownload()}
                   placeholder="비밀번호를 입력하세요"
-                  className="w-full p-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#667eea] focus:border-transparent"
+                  className="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#667eea] focus:border-transparent"
+                  style={{
+                    backgroundColor: "var(--surface-glass)",
+                    borderColor: "var(--border-glass)",
+                    color: "var(--text-primary)",
+                  }}
                   autoFocus
                 />
                 {passwordError && (
@@ -533,14 +663,20 @@ const Player = () => {
                 <button
                   onClick={closeDownloadModal}
                   disabled={isDownloading}
-                  className="flex-1 py-3 px-4 rounded-xl bg-white/10 border border-white/20 text-white font-medium transition-all duration-300 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 px-4 rounded-xl border font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: "var(--surface-glass)",
+                    borderColor: "var(--border-glass)",
+                    color: "var(--text-primary)",
+                  }}
                 >
                   취소
                 </button>
                 <button
                   onClick={handleDownload}
                   disabled={isDownloading}
-                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-[#667eea]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#667eea] to-[#764ba2] font-medium transition-all duration-300 hover:shadow-lg hover:shadow-[#667eea]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  style={{ color: "var(--text-primary)" }}
                 >
                   {isDownloading ? (
                     <>
