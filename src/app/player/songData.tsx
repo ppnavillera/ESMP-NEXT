@@ -77,16 +77,16 @@ export default function SongData({
         {/* Loading skeleton */}
         <div className="animate-pulse space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/10 rounded-lg animate-pulse" />
-            <div className="h-4 bg-white/10 rounded-md w-32 animate-pulse" />
+            <div className="w-8 h-8 rounded-lg animate-pulse" style={{ backgroundColor: 'var(--surface-glass)' }} />
+            <div className="h-4 rounded-md w-32 animate-pulse" style={{ backgroundColor: 'var(--surface-glass)' }} />
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/10 rounded-lg animate-pulse" />
-            <div className="h-4 bg-white/10 rounded-md w-24 animate-pulse" />
+            <div className="w-8 h-8 rounded-lg animate-pulse" style={{ backgroundColor: 'var(--surface-glass)' }} />
+            <div className="h-4 rounded-md w-24 animate-pulse" style={{ backgroundColor: 'var(--surface-glass)' }} />
           </div>
           <div className="ml-11 space-y-2">
-            <div className="h-3 bg-white/10 rounded w-3/4 animate-pulse" />
-            <div className="h-3 bg-white/10 rounded w-1/2 animate-pulse" />
+            <div className="h-3 rounded w-3/4 animate-pulse" style={{ backgroundColor: 'var(--surface-glass)' }} />
+            <div className="h-3 rounded w-1/2 animate-pulse" style={{ backgroundColor: 'var(--surface-glass)' }} />
           </div>
         </div>
       </div>
@@ -135,7 +135,11 @@ export default function SongData({
             return (
               <div
                 key={index}
-                className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/8 transition-all duration-200"
+                className="flex items-center gap-3 p-3 rounded-xl border transition-all duration-200"
+                style={{
+                  backgroundColor: 'var(--surface-glass)',
+                  borderColor: 'var(--border-glass)',
+                }}
               >
                 {key === "date" && (
                   <>
@@ -143,10 +147,10 @@ export default function SongData({
                       <CalendarIcon className="w-5 h-5 text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-white/50 text-xs uppercase tracking-wider">
+                      <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
                         Release Date
                       </p>
-                      <p className="text-white/90 font-medium">{value}</p>
+                      <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{value}</p>
                     </div>
                   </>
                 )}
@@ -170,13 +174,14 @@ export default function SongData({
                       )}
                     </div>
                     <div>
-                      <p className="text-white/50 text-xs uppercase tracking-wider">
+                      <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
                         Status
                       </p>
                       <p
-                        className={`font-medium ${
-                          value ? "text-green-400" : "text-gray-400"
-                        }`}
+                        className="font-medium"
+                        style={{
+                          color: value ? '#4ade80' : 'var(--text-tertiary)',
+                        }}
                       >
                         {value ? "Sold" : "Available"}
                       </p>
@@ -199,7 +204,7 @@ export default function SongData({
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-3">
             <MusicalNoteIcon className="w-4 h-4 text-purple-400" />
-            <p className="text-white/70 text-sm font-medium">Track Details</p>
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Track Details</p>
           </div>
 
           <div className="pl-6 space-y-2">
@@ -209,7 +214,7 @@ export default function SongData({
               return (
                 <div key={index} className="flex items-start gap-2 group">
                   <div className="w-1.5 h-1.5 rounded-full bg-purple-500/50 mt-1.5 group-hover:bg-purple-400 transition-colors duration-200" />
-                  <p className="text-white/70 text-sm leading-relaxed group-hover:text-white/90 transition-colors duration-200">
+                  <p className="text-sm leading-relaxed transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
                     {props.value}
                   </p>
                 </div>
