@@ -335,275 +335,270 @@ const Player = () => {
 
   return (
     <AppLayout showNav={true}>
-      {/* Album Art Section */}
-      <div className="text-center mb-10">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:py-4">
+        {/* Player Section */}
         <div
-          className="w-72 h-72 mx-auto mb-6 rounded-3xl flex items-center justify-center animate-pulse-custom cursor-pointer group"
-          style={{
-            background: "var(--gradient-primary)",
-            boxShadow: "0 20px 60px var(--card-shadow)",
-          }}
+          className="lg:w-5/12 flex flex-col justify-center lg:py-6 lg:pr-6 lg:border-r "
+          style={{ borderColor: "var(--border-glass)" }}
         >
-          <div className="flex items-end justify-center gap-1 h-32">
-            {[...Array(10)].map((_, i) => (
-              <div
-                key={i}
-                className={`w-1 bg-gradient-to-t from-white/30 to-white/80 rounded-sm visualizer-bar ${
-                  !isPlaying ? "paused" : ""
-                }`}
-                style={{
-                  height: `${40 + Math.random() * 40}%`,
-                  animationDelay: `${i * 0.1}s`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-        <h1
-          className="text-3xl font-bold mb-2"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {currentSong || "Select a Song"}
-        </h1>
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          Choose from playlist
-        </p>
-      </div>
-
-      {/* Hidden Audio Element */}
-      <audio ref={audioRef} className="hidden" preload="auto">
-        <source src={currentLink} type="audio/mpeg" />
-      </audio>
-
-      {/* Progress Bar */}
-      <div className="mb-8">
-        <div
-          className="h-3 rounded-full overflow-hidden cursor-pointer border"
-          style={{
-            backgroundColor: "var(--progress-track)",
-            borderColor: "var(--border-glass)",
-          }}
-          onClick={handleProgressClick}
-        >
-          <div
-            className="h-full rounded-full relative transition-all duration-300"
-            style={{
-              width: `${progressPercent}%`,
-              background: "var(--gradient-primary)",
-            }}
-          >
+          {/* Album Art Section */}
+          <div className="text-center mb-8 lg:mb-10">
             <div
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-lg"
+              className="w-64 h-64 lg:w-72 lg:h-72 mx-auto mb-6 rounded-3xl flex items-center justify-center animate-pulse-custom cursor-pointer group"
               style={{
-                backgroundColor: "var(--gradient-text)",
-                boxShadow: "0 0 20px var(--card-shadow)",
+                background: "var(--gradient-primary)",
+                boxShadow: "0 20px 60px var(--card-shadow)",
               }}
-            />
-          </div>
-        </div>
-        <div
-          className="flex justify-between mt-2 text-xs"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
-      </div>
-
-      {/* Control Buttons */}
-      <div className="flex justify-center items-center gap-6 mb-10">
-        <button
-          onClick={restartCurrentSong}
-          className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
-          title="처음부터 재생"
-        >
-          <ArrowPathIcon
-            className="w-6 h-6"
-            style={{ color: "var(--text-primary)" }}
-          />
-        </button>
-        <button
-          onClick={playPrevious}
-          className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
-        >
-          <ChevronLeftIcon
-            className="w-6 h-6"
-            style={{ color: "var(--text-primary)" }}
-          />
-        </button>
-        <button
-          onClick={togglePlayPause}
-          className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-          style={{
-            background: "var(--gradient-primary)",
-            boxShadow: "0 10px 30px var(--card-shadow)",
-          }}
-        >
-          {isPlaying ? (
-            <PauseIcon
-              className="w-8 h-8"
-              style={{ color: "var(--text-primary)" }}
-            />
-          ) : (
-            <PlayIcon
-              className="w-8 h-8 ml-1"
-              style={{ color: "var(--text-primary)" }}
-            />
-          )}
-        </button>
-        <button
-          onClick={playNext}
-          className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
-        >
-          <ChevronRightIcon
-            className="w-6 h-6"
-            style={{ color: "var(--text-primary)" }}
-          />
-        </button>
-        <button
-          onClick={openDownloadModal}
-          className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
-          title="다운로드"
-        >
-          <MusicalNoteIcon
-            className="w-6 h-6"
-            style={{ color: "var(--text-primary)" }}
-          />
-        </button>
-      </div>
-
-      {/* Playlist Section */}
-      <div>
-        <h2
-          className="text-lg font-semibold mb-5 flex items-center"
-          style={{ color: "var(--text-primary)" }}
-        >
-          Playlist
-          <div
-            className="flex-1 h-px bg-gradient-to-r to-transparent ml-4"
-            style={{
-              background: `linear-gradient(to right, var(--playlist-divider), transparent)`,
-            }}
-          />
-        </h2>
-        <div className="max-h-96 overflow-y-auto scroll-container pr-2 pt-1">
-          {songs.map((song, index) => {
-            const name = song.properties.Song.title[0].text.content;
-            const isActive = currentSongIndex === index;
-            return (
-              <div key={index}>
-                <div
-                  className="relative flex items-center p-4 mb-3 rounded-2xl cursor-pointer transition-all duration-300 playlist-item-slide border"
-                  style={{
-                    background: isActive
-                      ? "var(--playlist-item-active)"
-                      : "var(--playlist-item-bg)",
-                    borderColor: isActive
-                      ? "rgba(96, 165, 250, 0.4)"
-                      : "var(--border-glass)",
-
-                    boxShadow: isActive
-                      ? "0 4px 20px var(--card-shadow)"
-                      : "0 2px 10px var(--card-shadow)",
-                    // transform: isActive ? "translateY(-1px)" : "translateY(0)",
-                  }}
-                >
+            >
+              <div className="flex items-end justify-center gap-1 h-32">
+                {[...Array(10)].map((_, i) => (
                   <div
-                    onClick={() => onClick(name, index)}
-                    className="flex items-center flex-1"
-                  >
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold mr-4"
-                      style={{
-                        background: isActive
-                          ? "var(--gradient-primary)"
-                          : "var(--surface-glass)",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: isActive
-                            ? "var(--text-primary)"
-                            : "var(--text-secondary)",
-                        }}
-                      >
-                        {index + 1}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div
-                        className="text-sm font-medium mb-1"
-                        style={{ color: "var(--text-primary)" }}
-                      >
-                        {name}
-                      </div>
-                      <div
-                        className="text-xs"
-                        style={{ color: "var(--text-tertiary)" }}
-                      >
-                        Artist Name
-                      </div>
-                    </div>
-                    <div
-                      className="text-xs"
-                      style={{ color: "var(--text-tertiary)" }}
-                    >
-                      3:45
-                    </div>
-                  </div>
-
-                  {/* Info Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggle(index);
+                    key={i}
+                    className={`w-1 bg-gradient-to-t from-white/30 to-white/80 rounded-sm visualizer-bar ${
+                      !isPlaying ? "paused" : ""
+                    }`}
+                    style={{
+                      height: `${40 + Math.random() * 40}%`,
+                      animationDelay: `${i * 0.1}s`,
                     }}
-                    className="ml-2 w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-300"
-                  >
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-300 ${
-                        openIndex === index ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Accordion for SongData */}
-                {openIndex === index && (
-                  <div className="mb-3 p-4 glass-effect rounded-xl shadow-xl border border-white/20">
-                    <SongData
-                      name={name}
-                      onLoadingChange={(isLoading) =>
-                        handleLoadingChange(index, isLoading)
-                      }
-                    />
-                  </div>
-                )}
+                  />
+                ))}
               </div>
-            );
-          })}
-          {loading && (
+            </div>
+            <h1
+              className="text-3xl font-bold mb-2"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {currentSong || "Select a Song"}
+            </h1>
+          </div>
+
+          {/* Hidden Audio Element */}
+          <audio ref={audioRef} className="hidden" preload="auto">
+            <source src={currentLink} type="audio/mpeg" />
+          </audio>
+
+          {/* Progress Bar */}
+          <div className="mb-8">
             <div
-              className="p-4 rounded-2xl skeleton-loading text-center"
+              className="h-3 rounded-full overflow-hidden cursor-pointer border"
+              style={{
+                backgroundColor: "var(--progress-track)",
+                borderColor: "var(--border-glass)",
+              }}
+              onClick={handleProgressClick}
+            >
+              <div
+                className="h-full rounded-full relative transition-all duration-300"
+                style={{
+                  width: `${progressPercent}%`,
+                  background: "var(--gradient-primary)",
+                }}
+              >
+                <div
+                  className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-lg"
+                  style={{
+                    backgroundColor: "var(--gradient-text)",
+                    boxShadow: "0 0 20px var(--card-shadow)",
+                  }}
+                />
+              </div>
+            </div>
+            <div
+              className="flex justify-between mt-2 text-xs"
               style={{ color: "var(--text-secondary)" }}
             >
-              Loading more songs...
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
             </div>
-          )}
+          </div>
 
-          {/* Infinite Scroll Observer - 스크롤 컨테이너 안에 위치 */}
-          {hasMore && <div id="observer" className="h-1" />}
+          {/* Control Buttons */}
+          <div className="flex justify-center items-center gap-6 mb-10">
+            <button
+              onClick={restartCurrentSong}
+              className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
+              title="처음부터 재생"
+            >
+              <ArrowPathIcon
+                className="w-6 h-6"
+                style={{ color: "var(--text-primary)" }}
+              />
+            </button>
+            <button
+              onClick={playPrevious}
+              className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
+            >
+              <ChevronLeftIcon
+                className="w-6 h-6"
+                style={{ color: "var(--text-primary)" }}
+              />
+            </button>
+            <button
+              onClick={togglePlayPause}
+              className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+              style={{
+                background: "var(--gradient-primary)",
+                boxShadow: "0 10px 30px var(--card-shadow)",
+              }}
+            >
+              {isPlaying ? (
+                <PauseIcon
+                  className="w-8 h-8"
+                  style={{ color: "var(--text-primary)" }}
+                />
+              ) : (
+                <PlayIcon
+                  className="w-8 h-8 ml-1"
+                  style={{ color: "var(--text-primary)" }}
+                />
+              )}
+            </button>
+            <button
+              onClick={playNext}
+              className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
+            >
+              <ChevronRightIcon
+                className="w-6 h-6"
+                style={{ color: "var(--text-primary)" }}
+              />
+            </button>
+            <button
+              onClick={openDownloadModal}
+              className="w-12 h-12 rounded-full glass-effect flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-white/15"
+              title="다운로드"
+            >
+              <MusicalNoteIcon
+                className="w-6 h-6"
+                style={{ color: "var(--text-primary)" }}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Playlist Section */}
+        <div className="lg:w-7/12 mt-8 lg:mt-0 lg:py-6">
+          <div className="lg:h-full flex flex-col min-h-0">
+            <h2
+              className="text-lg font-semibold mb-5 flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Playlist
+              <div
+                className="flex-1 h-px bg-gradient-to-r to-transparent ml-4"
+                style={{
+                  background: `linear-gradient(to right, var(--play list-divider), transparent)`,
+                }}
+              />
+            </h2>
+            <div className="max-h-96 lg:flex-1 lg:max-h-[48rem] overflow-y-auto scroll-container pr-2 pt-1">
+              {songs.map((song, index) => {
+                const name = song.properties.Song.title[0].text.content;
+                const isActive = currentSongIndex === index;
+                return (
+                  <div key={index}>
+                    <div
+                      className="relative flex items-center p-4 mb-3 rounded-2xl cursor-pointer transition-all duration-300 playlist-item-slide border"
+                      style={{
+                        background: isActive
+                          ? "var(--playlist-item-active)"
+                          : "var(--playlist-item-bg)",
+                        borderColor: isActive
+                          ? "rgba(96, 165, 250, 0.4)"
+                          : "var(--border-glass)",
+
+                        boxShadow: isActive
+                          ? "0 4px 20px var(--card-shadow)"
+                          : "0 2px 10px var(--card-shadow)",
+                        // transform: isActive ? "translateY(-1px)" : "translateY(0)",
+                      }}
+                    >
+                      <div
+                        onClick={() => onClick(name, index)}
+                        className="flex items-center flex-1"
+                      >
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold mr-4"
+                          style={{
+                            background: isActive
+                              ? "var(--gradient-primary)"
+                              : "var(--surface-glass)",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: isActive
+                                ? "var(--text-primary)"
+                                : "var(--text-secondary)",
+                            }}
+                          >
+                            {index + 1}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div
+                            className="text-sm font-medium mb-1"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {name}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggle(index);
+                        }}
+                        className="ml-2 w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-300"
+                      >
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-300 ${
+                            openIndex === index ? "rotate-180" : ""
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Accordion for SongData */}
+                    {openIndex === index && (
+                      <div className="mb-3 p-4 glass-effect rounded-xl shadow-xl border border-white/20">
+                        <SongData
+                          name={name}
+                          onLoadingChange={(isLoading) =>
+                            handleLoadingChange(index, isLoading)
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {loading && (
+                <div
+                  className="p-4 rounded-2xl skeleton-loading text-center"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Loading more songs...
+                </div>
+              )}
+
+              {/* Infinite Scroll Observer - 스크롤 컨테이너 안에 위치 */}
+              {hasMore && <div id="observer" className="h-1" />}
+            </div>
+          </div>
         </div>
       </div>
 
