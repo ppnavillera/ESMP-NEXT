@@ -1,8 +1,64 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @import url("https://fonts.googleapis.com/css2?family=Arsenal:ital,wght@0,400;0,700;1,400;1,700&family=Barlow&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+KR:wght@100..900&display=swap");
+
+@theme {
+  --font-sans: "Noto Sans KR", "Arial", sans-serif;
+  --font-notosans: "Noto Sans KR", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-pretendard: "Pretendard-Regular";
+
+  /* Design System Colors */
+  --dark-bg: #0a0e27;
+  --surface-dark: rgba(255, 255, 255, 0.05);
+  --surface-light: rgba(255, 255, 255, 0.1);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --accent: #667eea;
+  --accent-hover: #764ba2;
+
+  /* --animate-shimmer: shimmer 2s linear infinite; */
+  --animate-bounce: bounce 1s infinite;
+}
+
+/* Base Body Styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, sans-serif;
+  background: var(--dark-bg);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Animated Background */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+      circle at 20% 50%,
+      rgba(102, 126, 234, 0.3) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(245, 87, 108, 0.3) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 40% 20%,
+      rgba(240, 147, 251, 0.3) 0%,
+      transparent 50%
+    );
+  animation: floatingGradient 20s ease infinite;
+  z-index: -1;
+}
 
 @font-face {
   font-family: "Pretendard-Regular";
@@ -51,4 +107,195 @@ body {
 }
 .toggle-btn:active::after {
   padding-right: 1.6em;
+}
+
+@layer components {
+  @keyframes floatingGradient {
+    0%,
+    100% {
+      transform: rotate(0deg) scale(1);
+    }
+    33% {
+      transform: rotate(120deg) scale(1.1);
+    }
+    66% {
+      transform: rotate(240deg) scale(0.95);
+    }
+  }
+  @keyframes holographic {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+  }
+  @keyframes shimmer {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+  @keyframes dance {
+    0%,
+    100% {
+      transform: scaleY(1);
+    }
+    50% {
+      transform: scaleY(1.5);
+    }
+  }
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  .animate-float {
+    animation: floatingGradient 20s ease infinite;
+  }
+  .animate-holographic {
+    animation: holographic 3s linear infinite;
+  }
+  .animate-pulse-custom {
+    animation: pulse 4s ease-in-out infinite;
+  }
+  /* .animate-shimmer {
+    animation: shimmer 3s ease-in-out infinite;
+  } */
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+  .visualizer-bar {
+    animation: dance 1s ease-in-out infinite;
+  }
+  .visualizer-bar.paused {
+    animation-play-state: paused;
+  }
+  .skeleton-loading {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s ease-in-out infinite;
+  }
+  .glass-effect {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.05)
+    );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-effect::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent,
+      rgba(102, 126, 234, 0.1),
+      transparent,
+      rgba(245, 87, 108, 0.1),
+      transparent
+    );
+    animation: holographic 3s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .glass-effect > * {
+    position: relative;
+    z-index: 2;
+  }
+  .scroll-container::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scroll-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+  .scroll-container::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 2px;
+  }
+  .playlist-item-slide {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .playlist-item-slide::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(102, 126, 234, 0.3),
+      transparent
+    );
+    transition: left 0.5s ease;
+    z-index: 0;
+  }
+
+  .playlist-item-slide:hover::before {
+    left: 100%;
+  }
+
+  .playlist-item-slide:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: translateX(8px);
+    border-color: rgba(102, 126, 234, 0.3) !important;
+  }
+
+  .playlist-item-slide > * {
+    position: relative;
+    z-index: 1;
+  }
 }
