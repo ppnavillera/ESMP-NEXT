@@ -8,6 +8,89 @@
   --font-montserrat: "Montserrat", sans-serif;
   --font-pretendard: "Pretendard-Regular";
 
+  /* Base Colors */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+
+  /* Primary Colors */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+
+  /* Secondary Colors */
+  --color-secondary-50: #f8fafc;
+  --color-secondary-100: #f1f5f9;
+  --color-secondary-200: #e2e8f0;
+  --color-secondary-300: #cbd5e1;
+  --color-secondary-400: #94a3b8;
+  --color-secondary-500: #64748b;
+  --color-secondary-600: #475569;
+  --color-secondary-700: #334155;
+  --color-secondary-800: #1e293b;
+  --color-secondary-900: #0f172a;
+
+  /* Accent Colors */
+  --color-accent-50: #fdf4ff;
+  --color-accent-100: #fae8ff;
+  --color-accent-200: #f5d0fe;
+  --color-accent-300: #f0abfc;
+  --color-accent-400: #e879f9;
+  --color-accent-500: #d946ef;
+  --color-accent-600: #c026d3;
+  --color-accent-700: #a21caf;
+  --color-accent-800: #86198f;
+  --color-accent-900: #701a75;
+
+  /* Success Colors */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-success-900: #14532d;
+
+  /* Warning Colors */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+
+  /* Error Colors */
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-800: #991b1b;
+  --color-error-900: #7f1d1d;
+
+  /* Custom ESMP Colors */
+  --color-esmp-purple: #667eea;
+  --color-esmp-pink: #764ba2;
+  --color-esmp-red: #f5576c;
+  --color-esmp-magenta: #f093fb;
+
   /* Design System Colors */
   --dark-bg: #0a0e27;
   --surface-dark: rgba(255, 255, 255, 0.05);
@@ -21,16 +104,82 @@
   --animate-bounce: bounce 1s infinite;
 }
 
+/* Root Theme Variables */
+:root {
+  /* Light Theme */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --surface-glass: rgba(255, 255, 255, 0.8);
+  --surface-glass-hover: rgba(255, 255, 255, 0.9);
+  --border-glass: rgba(0, 0, 0, 0.1);
+  /* --border-glass: rgba(0, 0, 0, 0.15); */
+  --shadow-glass: rgba(0, 0, 0, 0.1);
+
+  /* Light Theme Gradients */
+  --gradient-primary: linear-gradient(135deg, #60a5fa, #a855f7);
+  --gradient-secondary: linear-gradient(135deg, #f472b6, #f43f5e);
+  --gradient-accent: linear-gradient(135deg, #34d399, #059669);
+
+  /* Light Theme UI Elements */
+  --progress-bg: rgba(0, 0, 0, 0.1);
+  --progress-track: rgba(0, 0, 0, 0.05);
+  /* --playlist-item-bg: rgba(0, 0, 0, 0.08);
+  --playlist-item-hover: rgba(0, 0, 0, 0.15);
+  --card-shadow: rgba(0, 0, 0, 0.15); */
+
+  /* 수정 전 */
+  --playlist-item-hover: rgba(0, 0, 0, 0.05);
+  --playlist-item-active: rgba(96, 165, 250, 0.1);
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --gradient-text: #ffffff;
+  --playlist-divider: rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  /* Dark Theme */
+  --bg-primary: #0a0e27;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  --surface-glass: rgba(255, 255, 255, 0.1);
+  --surface-glass-hover: rgba(255, 255, 255, 0.15);
+  --border-glass: rgba(255, 255, 255, 0.18);
+  --shadow-glass: rgba(0, 0, 0, 0.3);
+
+  /* Dark Theme Gradients */
+  --gradient-primary: linear-gradient(135deg, #667eea, #764ba2);
+  --gradient-secondary: linear-gradient(135deg, #f093fb, #f5576c);
+  --gradient-accent: linear-gradient(135deg, #4ade80, #22c55e);
+
+  /* Dark Theme UI Elements */
+  --progress-bg: rgba(255, 255, 255, 0.1);
+  --progress-track: rgba(255, 255, 255, 0.05);
+  --playlist-item-bg: rgba(255, 255, 255, 0.05);
+  --playlist-item-hover: rgba(255, 255, 255, 0.1);
+  --playlist-item-active: rgba(102, 126, 234, 0.2);
+  --card-shadow: rgba(0, 0, 0, 0.3);
+  --gradient-text: #ffffff;
+  --playlist-divider: rgba(255, 255, 255, 0.2);
+}
+
 /* Base Body Styles */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, sans-serif;
-  background: var(--dark-bg);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Animated Background */
@@ -58,6 +207,26 @@ body::before {
     );
   animation: floatingGradient 20s ease infinite;
   z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+/* Light theme background */
+:root body::before {
+  background: radial-gradient(
+      circle at 20% 50%,
+      rgba(102, 126, 234, 0.1) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(245, 87, 108, 0.1) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 40% 20%,
+      rgba(240, 147, 251, 0.1) 0%,
+      transparent 50%
+    );
 }
 
 @font-face {
@@ -217,14 +386,15 @@ body {
   .glass-effect {
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.1),
-      rgba(255, 255, 255, 0.05)
+      var(--surface-glass),
+      var(--surface-glass-hover)
     );
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid var(--border-glass);
     position: relative;
     overflow: hidden;
+    transition: all 0.3s ease;
   }
 
   .glass-effect::before {
@@ -289,9 +459,11 @@ body {
   }
 
   .playlist-item-slide:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: var(--playlist-item-hover) !important;
+
     transform: translateX(8px);
-    border-color: rgba(102, 126, 234, 0.3) !important;
+    border-color: rgba(96, 165, 250, 0.4) !important;
+    box-shadow: 0 8px 30px var(--card-shadow) !important;
   }
 
   .playlist-item-slide > * {
