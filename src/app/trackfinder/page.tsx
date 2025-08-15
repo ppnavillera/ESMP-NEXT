@@ -121,8 +121,8 @@ export default function TrackFinder() {
       {/* Filters Section */}
       <div className="mb-8">
         <div className="flex items-center mb-4">
-          <MagnifyingGlassIcon className="w-5 h-5 text-white/70 mr-2" />
-          <h3 className="text-lg font-semibold text-white">Filters</h3>
+          <MagnifyingGlassIcon className="w-5 h-5 mr-2" style={{ color: 'var(--text-secondary)' }} />
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Filters</h3>
         </div>
         <div className="glass-effect rounded-2xl p-6">
           <div className="flex flex-wrap gap-4">
@@ -137,8 +137,8 @@ export default function TrackFinder() {
       {/* Results Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Results</h3>
-          <span className="text-sm text-white/60">
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Results</h3>
+          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
             {!isLoading ? `${data.length} tracks found` : "Loading..."}
           </span>
         </div>
@@ -147,7 +147,7 @@ export default function TrackFinder() {
           {isLoading ? (
             <div className="text-center py-12">
               <div className="w-8 h-8 border-2 border-[#667eea] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-white/70">Loading tracks...</p>
+              <p style={{ color: 'var(--text-secondary)' }}>Loading tracks...</p>
             </div>
           ) : (
             <div className="max-h-96 overflow-y-auto scroll-container">
@@ -158,13 +158,17 @@ export default function TrackFinder() {
                     return (
                       <div
                         key={index}
-                        className="flex items-center p-4 rounded-xl bg-white/5 border border-white/10 transition-all duration-300 hover:bg-white/10 hover:border-[#667eea]/30 cursor-pointer"
+                        className="flex items-center p-4 rounded-xl transition-all duration-300 hover:border-[#667eea]/30 cursor-pointer"
+                        style={{
+                          backgroundColor: 'var(--surface-glass)',
+                          borderColor: 'var(--border-glass)',
+                        }}
                       >
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center text-xs font-semibold text-white mr-4">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center text-xs font-semibold mr-4" style={{ color: 'var(--text-primary)' }}>
                           {index + 1}
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm font-medium text-white">
+                          <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                             {title}
                           </div>
                         </div>
@@ -174,9 +178,9 @@ export default function TrackFinder() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <MagnifyingGlassIcon className="w-12 h-12 text-white/30 mx-auto mb-4" />
-                  <p className="text-white/50">No tracks found</p>
-                  <p className="text-white/30 text-sm">Try adjusting your filters</p>
+                  <MagnifyingGlassIcon className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+                  <p style={{ color: 'var(--text-secondary)' }}>No tracks found</p>
+                  <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Try adjusting your filters</p>
                 </div>
               )}
             </div>
