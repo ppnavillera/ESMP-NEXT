@@ -278,7 +278,32 @@ body {
   padding-right: 1.6em;
 }
 
+.title-subtle-3d {
+  background: var(--gradient-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.1),
+    0px 2px 2px rgba(0, 0, 0, 0.3), 0px 4px 8px var(--card-shadow);
+  animation: float 6s ease-in-out infinite;
+}
+
+/* 라이트 모드용 타이틀 그림자 */
+:root .title-subtle-3d {
+  /* 더 진하고 선명한 그라데이션으로 교체하여 가독성 확보 */
+  background: linear-gradient(135deg, #4f46e5, #9333ea);
+  background-clip: text;
+  -webkit-background-clip: text;
+  /* 그림자를 살짝 더 어둡게 하여 입체감 강화 */
+  text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.6),
+    0px 2px 4px rgba(0, 0, 0, 0.2), 0px 6px 12px var(--card-shadow);
+}
 @layer components {
+  @keyframes float {
+    50% {
+      transform: translateY(-8px);
+    }
+  }
   @keyframes floatingGradient {
     0%,
     100% {
