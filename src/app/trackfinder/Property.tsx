@@ -10,7 +10,7 @@ interface PropertyProps {
 }
 
 function Property({ property, type }: PropertyProps) {
-  const { selectedFilters, setSelectFilter, setDateFilter } = useFilterStore();
+  const { selectedFilters, setSelectFilter } = useFilterStore();
 
   // Checkbox 타입
   if (type === "checkbox") {
@@ -52,23 +52,9 @@ function Property({ property, type }: PropertyProps) {
     );
   }
 
-  // Date 타입 (완성일)
+  // Date 타입은 page.tsx에서 직접 처리하므로 여기서는 렌더링하지 않음
   if (type === "date") {
-    return (
-      <div className="flex flex-col items-center min-w-[140px] flex-none">
-        <span className="text-center text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-          {property}
-        </span>
-        <div className="mt-2 w-full">
-          <input
-            type="date"
-            value={selectedFilters[property] as string || ""}
-            onChange={(e) => setDateFilter(property, e.target.value || null)}
-            className="w-full p-2 text-sm rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 border border-transparent focus:border-[#667eea]/50 focus:outline-none"
-          />
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Multi-select 타입 (멜로디메이커, 작사 등)

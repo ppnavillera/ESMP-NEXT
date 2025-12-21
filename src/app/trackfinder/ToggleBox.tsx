@@ -1,18 +1,21 @@
 "use client";
 
-import { useFilterStore } from "@/stores/filterStore";
+import { useFilterStore, ConfirmStatus } from "@/stores/filterStore";
 
 interface ToggleBoxProps {
   property: string;
 }
 
 export default function ToggleBox({ property }: ToggleBoxProps) {
-  const { selectedFilters, setCheckboxFilter } = useFilterStore();
+  const { selectedFilters, setConfirmStatus } = useFilterStore();
 
-  const isToggled = selectedFilters[property] === true;
+  // 확정 필터의 경우 ConfirmStatus 값으로 처리
+  const isToggled = selectedFilters[property] === "confirmed";
 
   const handleToggle = () => {
-    setCheckboxFilter(property, !isToggled);
+    if (property === "확정") {
+      setConfirmStatus(isToggled ? "all" : "confirmed");
+    }
   };
 
   return (
