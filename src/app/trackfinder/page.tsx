@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import AppLayout from "@/components/AppLayout";
 import {
   MagnifyingGlassIcon,
@@ -14,6 +14,8 @@ import {
   MusicalNoteIcon,
   AdjustmentsHorizontalIcon,
   ArrowsUpDownIcon,
+  PlayIcon,
+  PauseIcon,
 } from "@heroicons/react/24/outline";
 import { useFilterStore, ConfirmStatus, DateRange } from "@/stores/filterStore";
 
@@ -25,6 +27,9 @@ interface Song {
           content: string;
         };
       }[];
+    };
+    Link?: {
+      url: string;
     };
     멜로디메이커?: {
       multi_select: { name: string }[];
@@ -72,6 +77,12 @@ export default function TrackFinder() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["status", "basic"]));
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const {
     selectedFilters,
@@ -87,11 +98,23 @@ export default function TrackFinder() {
 
   const activeFilters = getActiveFilters();
 
-  // 정렬된 데이터
+  // 검색 + 정렬된 데이터
   const sortedData = useMemo(() => {
-    return [...data].sort((a, b) => {
+    let filtered = data;
+
+    // 검색어 필터링
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = data.filter((song) => {
+        const title = song.properties.Title.title[0]?.text.content || "";
+        return title.toLowerCase().includes(query);
+      });
+    }
+
+    // 정렬
+    return [...filtered].sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortField) {
         case "title":
           const titleA = a.properties.Title.title[0]?.text.content || "";
@@ -109,10 +132,10 @@ export default function TrackFinder() {
           comparison = statusA - statusB;
           break;
       }
-      
+
       return sortOrder === "asc" ? comparison : -comparison;
     });
-  }, [data, sortField, sortOrder]);
+  }, [data, sortField, sortOrder, searchQuery]);
 
   const fetchTracks = async (withFilter = false) => {
     setIsLoading(true);
@@ -222,6 +245,50 @@ export default function TrackFinder() {
       setSortField(field);
       setSortOrder("desc");
     }
+  };
+
+  // 모달 열기
+  const openSongModal = (song: Song) => {
+    setSelectedSong(song);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+  };
+
+  // 모달 닫기
+  const closeSongModal = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setSelectedSong(null);
+    setIsPlaying(false);
+  };
+
+  // 재생/일시정지
+  const togglePlayPause = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  // 시간 포맷
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  // 프로그레스 바 클릭
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    audioRef.current.currentTime = percent * duration;
   };
 
   // 참여자 필터 옵션들
@@ -541,6 +608,35 @@ export default function TrackFinder() {
 
           {/* Results Panel */}
           <div className="flex-1 min-w-0">
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div
+                className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                style={{
+                  backgroundColor: "var(--surface-glass)",
+                  border: "1px solid var(--border-glass)",
+                }}
+              >
+                <MagnifyingGlassIcon className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-tertiary)" }} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="곡 제목으로 검색..."
+                  className="flex-1 bg-transparent text-sm focus:outline-none"
+                  style={{ color: "var(--text-primary)" }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="p-1 rounded-lg transition-colors hover:bg-white/10"
+                  >
+                    <XMarkIcon className="w-4 h-4" style={{ color: "var(--text-tertiary)" }} />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Results Header */}
             <div
               className="flex items-center justify-between p-4 rounded-t-2xl"
@@ -626,9 +722,9 @@ export default function TrackFinder() {
                       <tr style={{ borderBottom: "1px solid var(--border-glass)" }}>
                         <th className="px-4 py-3 text-left text-xs font-semibold" style={{ color: "var(--text-tertiary)" }}>#</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold" style={{ color: "var(--text-tertiary)" }}>제목</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold" style={{ color: "var(--text-tertiary)" }}>상태</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold" style={{ color: "var(--text-tertiary)" }}>성별</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold" style={{ color: "var(--text-tertiary)" }}>완성일</th>
+                        <th className="px-3 py-3 text-center text-xs font-semibold w-16" style={{ color: "var(--text-tertiary)" }}>상태</th>
+                        <th className="px-3 py-3 text-center text-xs font-semibold w-16" style={{ color: "var(--text-tertiary)" }}>성별</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold w-24" style={{ color: "var(--text-tertiary)" }}>완성일</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold" style={{ color: "var(--text-tertiary)" }}>참여자</th>
                       </tr>
                     </thead>
@@ -656,6 +752,7 @@ export default function TrackFinder() {
                             key={index}
                             className="transition-colors duration-200 hover:bg-white/5 cursor-pointer"
                             style={{ borderBottom: "1px solid var(--border-glass)" }}
+                            onClick={() => openSongModal(song)}
                           >
                             <td className="px-4 py-3">
                               <span
@@ -673,39 +770,48 @@ export default function TrackFinder() {
                                 {title}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-3 py-3 text-center">
                               {isConfirmed ? (
-                                <span
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                                  style={{ backgroundColor: "rgba(34, 197, 94, 0.15)", color: "#22c55e" }}
+                                <div
+                                  className="w-7 h-7 rounded-full flex items-center justify-center mx-auto"
+                                  style={{ backgroundColor: "rgba(34, 197, 94, 0.15)" }}
+                                  title="확정"
                                 >
-                                  <CheckCircleIcon className="w-3.5 h-3.5" />
-                                  확정
-                                </span>
+                                  <CheckCircleIcon className="w-4 h-4" style={{ color: "#22c55e" }} />
+                                </div>
                               ) : (
-                                <span
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                                  style={{ backgroundColor: "rgba(156, 163, 175, 0.15)", color: "var(--text-tertiary)" }}
+                                <div
+                                  className="w-7 h-7 rounded-full flex items-center justify-center mx-auto"
+                                  style={{ backgroundColor: "rgba(156, 163, 175, 0.15)" }}
+                                  title="대기"
                                 >
-                                  <ClockIcon className="w-3.5 h-3.5" />
-                                  대기
-                                </span>
+                                  <ClockIcon className="w-4 h-4" style={{ color: "var(--text-tertiary)" }} />
+                                </div>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              <span
-                                className="px-2 py-1 rounded-lg text-xs font-medium"
+                            <td className="px-3 py-3 text-center">
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center mx-auto text-sm font-bold"
                                 style={{
-                                  backgroundColor: "var(--bg-secondary)",
-                                  color: "var(--text-secondary)",
+                                  backgroundColor: gender === "남"
+                                    ? "rgba(59, 130, 246, 0.15)"
+                                    : gender === "여"
+                                      ? "rgba(236, 72, 153, 0.15)"
+                                      : "rgba(139, 92, 246, 0.15)",
+                                  color: gender === "남"
+                                    ? "#3b82f6"
+                                    : gender === "여"
+                                      ? "#ec4899"
+                                      : "#8b5cf6",
                                 }}
+                                title={gender}
                               >
-                                {gender}
-                              </span>
+                                {gender === "남" ? "♂" : gender === "여" ? "♀" : "⚥"}
+                              </div>
                             </td>
-                            <td className="px-4 py-3">
-                              <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                                {date}
+                            <td className="px-3 py-3">
+                              <span className="text-sm whitespace-nowrap" style={{ color: "var(--text-secondary)" }}>
+                                {date !== "-" ? date.slice(5).replace("-", ".") : "-"}
                               </span>
                             </td>
                             <td className="px-4 py-3">
@@ -746,6 +852,183 @@ export default function TrackFinder() {
           </div>
         </div>
       </div>
+
+      {/* Song Detail Modal */}
+      {selectedSong && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(8px)" }}
+          onClick={closeSongModal}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl p-6 relative animate-slide-up"
+            style={{
+              backgroundColor: "var(--bg-primary)",
+              border: "1px solid var(--border-glass)",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={closeSongModal}
+              className="absolute top-4 right-4 p-2 rounded-xl transition-colors hover:bg-white/10"
+            >
+              <XMarkIcon className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
+            </button>
+
+            {/* Song Title */}
+            <h2 className="text-2xl font-bold mb-6 pr-10" style={{ color: "var(--text-primary)" }}>
+              {selectedSong.properties.Title.title[0]?.text.content || "Untitled"}
+            </h2>
+
+            {/* Audio Player */}
+            {selectedSong.properties.Link?.url && (
+              <div
+                className="mb-6 p-4 rounded-2xl"
+                style={{ backgroundColor: "var(--surface-glass)", border: "1px solid var(--border-glass)" }}
+              >
+                <audio
+                  ref={audioRef}
+                  src={selectedSong.properties.Link?.url}
+                  onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
+                  onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+                  onEnded={() => setIsPlaying(false)}
+                />
+
+                {/* Progress Bar */}
+                <div
+                  className="h-2 rounded-full mb-3 cursor-pointer"
+                  style={{ backgroundColor: "var(--progress-track)" }}
+                  onClick={handleProgressClick}
+                >
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${duration ? (currentTime / duration) * 100 : 0}%`,
+                      background: "linear-gradient(90deg, #667eea, #764ba2)",
+                    }}
+                  />
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                    {formatTime(currentTime)}
+                  </span>
+                  <button
+                    onClick={togglePlayPause}
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                    style={{ background: "linear-gradient(135deg, #667eea, #764ba2)" }}
+                  >
+                    {isPlaying ? (
+                      <PauseIcon className="w-6 h-6 text-white" />
+                    ) : (
+                      <PlayIcon className="w-6 h-6 text-white ml-0.5" />
+                    )}
+                  </button>
+                  <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                    {formatTime(duration)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Song Details */}
+            <div className="space-y-3">
+              {/* Status & Gender & Date */}
+              <div className="flex gap-3 flex-wrap">
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                  style={{ backgroundColor: "var(--surface-glass)" }}
+                >
+                  {selectedSong.properties.확정?.checkbox ? (
+                    <>
+                      <CheckCircleIcon className="w-4 h-4" style={{ color: "#22c55e" }} />
+                      <span className="text-sm" style={{ color: "#22c55e" }}>확정</span>
+                    </>
+                  ) : (
+                    <>
+                      <ClockIcon className="w-4 h-4" style={{ color: "var(--text-tertiary)" }} />
+                      <span className="text-sm" style={{ color: "var(--text-tertiary)" }}>대기</span>
+                    </>
+                  )}
+                </div>
+
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                  style={{ backgroundColor: "var(--surface-glass)" }}
+                >
+                  <span style={{
+                    color: selectedSong.properties.성별?.select?.name === "남"
+                      ? "#3b82f6"
+                      : selectedSong.properties.성별?.select?.name === "여"
+                        ? "#ec4899"
+                        : "#8b5cf6"
+                  }}>
+                    {selectedSong.properties.성별?.select?.name === "남" ? "♂" :
+                     selectedSong.properties.성별?.select?.name === "여" ? "♀" : "⚥"}
+                  </span>
+                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    {selectedSong.properties.성별?.select?.name || "-"}
+                  </span>
+                </div>
+
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                  style={{ backgroundColor: "var(--surface-glass)" }}
+                >
+                  <CalendarIcon className="w-4 h-4" style={{ color: "var(--text-tertiary)" }} />
+                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    {selectedSong.properties.완성일?.date?.start || "-"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Participants */}
+              <div
+                className="p-4 rounded-xl space-y-3"
+                style={{ backgroundColor: "var(--surface-glass)" }}
+              >
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>참여자</h3>
+
+                {[
+                  { key: "멜로디메이커", icon: "Ⓜ", label: "멜로디" },
+                  { key: "작사", icon: "Ⓛ", label: "작사" },
+                  { key: "포스트프로덕션", icon: "Ⓟ", label: "포스트" },
+                  { key: "스케치트랙메이커", icon: "Ⓢ", label: "스케치" },
+                  { key: "마스터트랙메이커", icon: "Ⓣ", label: "마스터" },
+                ].map(({ key, icon, label }) => {
+                  const prop = selectedSong.properties[key as keyof typeof selectedSong.properties];
+                  if (!prop || !("multi_select" in prop) || !prop.multi_select.length) return null;
+
+                  return (
+                    <div key={key} className="flex items-start gap-2">
+                      <span
+                        className="text-xs font-bold px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: "rgba(102, 126, 234, 0.2)", color: "#667eea" }}
+                      >
+                        {icon}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {prop.multi_select.map((item: { name: string }) => (
+                          <span
+                            key={item.name}
+                            className="text-sm px-2 py-0.5 rounded-lg"
+                            style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-secondary)" }}
+                          >
+                            {item.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
