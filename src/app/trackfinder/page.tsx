@@ -1063,24 +1063,23 @@ export default function TrackFinder() {
                 <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>참여자</h3>
 
                 {[
-                  { key: "멜로디메이커", icon: "🎵", color: "#667eea" },
-                  { key: "작사", icon: "✍️", color: "#8b5cf6" },
-                  { key: "포스트프로덕션", icon: "🎚️", color: "#3b82f6" },
-                  { key: "스케치트랙메이커", icon: "🎹", color: "#06b6d4" },
-                  { key: "마스터트랙메이커", icon: "🎧", color: "#ec4899" },
-                ].map(({ key, icon, color }) => {
+                  { key: "멜로디메이커", color: "#667eea" },
+                  { key: "작사", color: "#8b5cf6" },
+                  { key: "포스트프로덕션", color: "#3b82f6" },
+                  { key: "스케치트랙메이커", color: "#06b6d4" },
+                  { key: "마스터트랙메이커", color: "#ec4899" },
+                ].map(({ key, color }) => {
                   const prop = selectedSong.properties[key as keyof typeof selectedSong.properties];
                   if (!prop || !("multi_select" in prop) || !prop.multi_select.length) return null;
 
                   return (
                     <div key={key} className="mb-3">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-base">{icon}</span>
+                      <div className="mb-1.5">
                         <span className="text-sm font-semibold" style={{ color }}>
                           {key}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-1.5 pl-6">
+                      <div className="flex flex-wrap gap-1.5 pl-3">
                         {prop.multi_select.map((item: { name: string }) => (
                           <span
                             key={item.name}
