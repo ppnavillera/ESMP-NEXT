@@ -18,7 +18,7 @@ import {
   PlayIcon,
   PauseIcon,
 } from "@heroicons/react/24/outline";
-import { useFilterStore, ConfirmStatus, DateRange } from "@/stores/filterStore";
+import { useFilterStore, ConfirmStatus, ToggleStatus, DateRange } from "@/stores/filterStore";
 
 interface Song {
   properties: {
@@ -51,6 +51,12 @@ interface Song {
       date: { start: string };
     };
     확정?: {
+      checkbox: boolean;
+    };
+    Drop?: {
+      checkbox: boolean;
+    };
+    Rap?: {
       checkbox: boolean;
     };
   };
@@ -97,6 +103,7 @@ export default function TrackFinder() {
     getActiveFilters,
     removeFilter,
     setConfirmStatus,
+    setToggleFilter,
     setSelectFilter,
     setDateRangeFilter,
     toggleMultiSelectFilter,
@@ -156,7 +163,7 @@ export default function TrackFinder() {
         });
         if (resp.ok) {
           const respData = await resp.json();
-          setData(respData.message ? [] : [respData]);
+          setData(respData.message ? [] : (Array.isArray(respData) ? respData : []));
         } else {
           setData([]);
         }
@@ -222,6 +229,11 @@ export default function TrackFinder() {
     fetchProps();
     fetchTracks();
   }, []);
+
+  // 필터 변경 시 자동으로 검색
+  useEffect(() => {
+    fetchTracks(true);
+  }, [selectedFilters]);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -461,6 +473,71 @@ export default function TrackFinder() {
                         </label>
                       </div>
                     ))}
+
+                    {/* Divider */}
+                    <div className="h-px my-3" style={{ background: "linear-gradient(to right, transparent, var(--border-glass), transparent)" }} />
+
+                    {/* Drop Filter */}
+                    <div className="mb-3">
+                      <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>
+                        Drop
+                      </label>
+                      <div className="flex gap-2">
+                        {[
+                          { value: "all", label: "전체" },
+                          { value: "yes", label: "있음" },
+                          { value: "no", label: "없음" },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => setToggleFilter("Drop", option.value as ToggleStatus)}
+                            className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                              (selectedFilters["Drop"] || "all") === option.value
+                                ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white"
+                                : ""
+                            }`}
+                            style={{
+                              backgroundColor: (selectedFilters["Drop"] || "all") === option.value ? undefined : "var(--bg-secondary)",
+                              border: (selectedFilters["Drop"] || "all") === option.value ? "none" : "1px solid var(--border-glass)",
+                              color: (selectedFilters["Drop"] || "all") === option.value ? "white" : "var(--text-secondary)",
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Rap Filter */}
+                    <div>
+                      <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>
+                        Rap
+                      </label>
+                      <div className="flex gap-2">
+                        {[
+                          { value: "all", label: "전체" },
+                          { value: "yes", label: "있음" },
+                          { value: "no", label: "없음" },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => setToggleFilter("Rap", option.value as ToggleStatus)}
+                            className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                              (selectedFilters["Rap"] || "all") === option.value
+                                ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white"
+                                : ""
+                            }`}
+                            style={{
+                              backgroundColor: (selectedFilters["Rap"] || "all") === option.value ? undefined : "var(--bg-secondary)",
+                              border: (selectedFilters["Rap"] || "all") === option.value ? "none" : "1px solid var(--border-glass)",
+                              color: (selectedFilters["Rap"] || "all") === option.value ? "white" : "var(--text-secondary)",
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -810,23 +887,43 @@ export default function TrackFinder() {
                               </span>
                             </td>
                             <td className="px-3 py-3 text-center">
-                              {isConfirmed ? (
-                                <div
-                                  className="w-7 h-7 rounded-full flex items-center justify-center mx-auto"
-                                  style={{ backgroundColor: "rgba(34, 197, 94, 0.15)" }}
-                                  title="확정"
-                                >
-                                  <CheckCircleIcon className="w-4 h-4" style={{ color: "#22c55e" }} />
-                                </div>
-                              ) : (
-                                <div
-                                  className="w-7 h-7 rounded-full flex items-center justify-center mx-auto"
-                                  style={{ backgroundColor: "rgba(156, 163, 175, 0.15)" }}
-                                  title="대기"
-                                >
-                                  <ClockIcon className="w-4 h-4" style={{ color: "var(--text-tertiary)" }} />
-                                </div>
-                              )}
+                              <div className="flex items-center justify-center gap-1">
+                                {isConfirmed ? (
+                                  <div
+                                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: "rgba(34, 197, 94, 0.15)" }}
+                                    title="확정"
+                                  >
+                                    <CheckCircleIcon className="w-3.5 h-3.5" style={{ color: "#22c55e" }} />
+                                  </div>
+                                ) : (
+                                  <div
+                                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: "rgba(156, 163, 175, 0.15)" }}
+                                    title="대기"
+                                  >
+                                    <ClockIcon className="w-3.5 h-3.5" style={{ color: "var(--text-tertiary)" }} />
+                                  </div>
+                                )}
+                                {song.properties.Drop?.checkbox && (
+                                  <span
+                                    className="text-[10px] font-bold px-1 rounded"
+                                    style={{ backgroundColor: "rgba(245, 158, 11, 0.2)", color: "#f59e0b" }}
+                                    title="Drop"
+                                  >
+                                    D
+                                  </span>
+                                )}
+                                {song.properties.Rap?.checkbox && (
+                                  <span
+                                    className="text-[10px] font-bold px-1 rounded"
+                                    style={{ backgroundColor: "rgba(239, 68, 68, 0.2)", color: "#ef4444" }}
+                                    title="Rap"
+                                  >
+                                    R
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-3 py-3 text-center">
                               <div
@@ -1024,6 +1121,24 @@ export default function TrackFinder() {
                     </>
                   )}
                 </div>
+
+                {selectedSong.properties.Drop?.checkbox && (
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                    style={{ backgroundColor: "rgba(245, 158, 11, 0.1)" }}
+                  >
+                    <span className="text-sm font-bold" style={{ color: "#f59e0b" }}>Drop</span>
+                  </div>
+                )}
+
+                {selectedSong.properties.Rap?.checkbox && (
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                    style={{ backgroundColor: "rgba(239, 68, 68, 0.1)" }}
+                  >
+                    <span className="text-sm font-bold" style={{ color: "#ef4444" }}>Rap</span>
+                  </div>
+                )}
 
                 <div
                   className="flex items-center gap-2 px-3 py-2 rounded-xl"
