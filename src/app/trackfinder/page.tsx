@@ -1057,39 +1057,49 @@ export default function TrackFinder() {
 
               {/* Participants */}
               <div
-                className="p-4 rounded-xl space-y-3"
+                className="p-4 rounded-xl"
                 style={{ backgroundColor: "var(--surface-glass)" }}
               >
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>참여자</h3>
+                <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>참여자</h3>
 
                 {[
-                  { key: "멜로디메이커", color: "#667eea" },
-                  { key: "작사", color: "#8b5cf6" },
-                  { key: "포스트프로덕션", color: "#3b82f6" },
-                  { key: "스케치트랙메이커", color: "#06b6d4" },
-                  { key: "마스터트랙메이커", color: "#ec4899" },
-                ].map(({ key, color }) => {
+                  { key: "멜로디메이커", label: "멜로디메이커", color: "#667eea" },
+                  { key: "작사", label: "작사", color: "#8b5cf6" },
+                  { key: "포스트프로덕션", label: "포스트프로덕션", color: "#3b82f6" },
+                  { key: "스케치트랙메이커", label: "스케치트랙메이커", color: "#06b6d4" },
+                  { key: "마스터트랙메이커", label: "마스터트랙메이커", color: "#ec4899" },
+                ].map(({ key, label, color }, index, array) => {
                   const prop = selectedSong.properties[key as keyof typeof selectedSong.properties];
                   if (!prop || !("multi_select" in prop) || !prop.multi_select.length) return null;
 
                   return (
-                    <div key={key} className="mb-3">
-                      <div className="mb-1.5">
-                        <span className="text-sm font-semibold" style={{ color }}>
-                          {key}
-                        </span>
+                    <div key={key}>
+                      <div className="py-2.5">
+                        <div className="text-xs font-semibold mb-2"
+                          style={{ color }}>
+                          {label}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {prop.multi_select.map((item: { name: string }) => (
+                            <span
+                              key={item.name}
+                              className="text-sm px-2 py-0.5 rounded-lg"
+                              style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-secondary)" }}
+                            >
+                              {item.name}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-1.5 pl-3">
-                        {prop.multi_select.map((item: { name: string }) => (
-                          <span
-                            key={item.name}
-                            className="text-sm px-2 py-0.5 rounded-lg"
-                            style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-secondary)" }}
-                          >
-                            {item.name}
-                          </span>
-                        ))}
-                      </div>
+                      {index < array.filter(({ key }) => {
+                        const p = selectedSong.properties[key as keyof typeof selectedSong.properties];
+                        return p && "multi_select" in p && p.multi_select.length;
+                      }).length - 1 && (
+                        <div className="h-px"
+                          style={{
+                            background: "linear-gradient(to right, transparent, var(--border-glass), transparent)"
+                          }} />
+                      )}
                     </div>
                   );
                 })}
