@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import AppLayout from "@/components/AppLayout";
 import {
   MagnifyingGlassIcon,
@@ -27,9 +28,6 @@ interface Song {
           content: string;
         };
       }[];
-    };
-    Link?: {
-      url: string;
     };
     멜로디메이커?: {
       multi_select: { name: string }[];
@@ -79,10 +77,18 @@ export default function TrackFinder() {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [audioLink, setAudioLink] = useState<string | null>(null);
+  const [loadingLink, setLoadingLink] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  // Portal을 위한 마운트 체크
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const {
     selectedFilters,
@@ -247,13 +253,50 @@ export default function TrackFinder() {
     }
   };
 
-  // 모달 열기
-  const openSongModal = (song: Song) => {
+  // 모달 열기 - Title로 Link 조회
+  const openSongModal = async (song: Song) => {
     setSelectedSong(song);
+    setAudioLink(null);
+    setLoadingLink(true);
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+
+    const title = song.properties.Title.title[0]?.text.content;
+    if (!title) {
+      setLoadingLink(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/get-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAudioLink(data.link);
+      }
+    } catch (error) {
+      console.error("Error fetching audio link:", error);
+    } finally {
+      setLoadingLink(false);
+    }
   };
+
+  // 모달 열릴 때 body 스크롤 방지
+  useEffect(() => {
+    if (selectedSong) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedSong]);
 
   // 모달 닫기
   const closeSongModal = () => {
@@ -298,6 +341,7 @@ export default function TrackFinder() {
   const dateRange = (selectedFilters["완성일"] as DateRange) || { start: null, end: null };
 
   return (
+    <>
     <AppLayout>
       <div className="min-h-[80vh]">
         {/* Header */}
@@ -317,7 +361,7 @@ export default function TrackFinder() {
               <span className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>
                 활성 필터:
               </span>
-              {activeFilters.map((filter, idx) => (
+              {activeFilters.map((filter: { property: string; value: string; displayValue: string }, idx: number) => (
                 <button
                   key={`${filter.property}-${filter.value}-${idx}`}
                   onClick={() => removeFilter(filter.property, filter.value !== "range" ? filter.value : undefined)}
@@ -388,38 +432,33 @@ export default function TrackFinder() {
                       { value: "confirmed", label: "확정만" },
                       { value: "unconfirmed", label: "미확정만" },
                     ].map((option) => (
-                      <label
-                        key={option.value}
-                        className="flex items-center gap-3 cursor-pointer group"
-                      >
-                        <div
-                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                            selectedFilters["확정"] === option.value
-                              ? "border-[#667eea] bg-[#667eea]"
-                              : "border-gray-400 group-hover:border-[#667eea]/50"
-                          }`}
-                        >
-                          {selectedFilters["확정"] === option.value && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          )}
-                        </div>
-                        <span
-                          className="text-sm transition-colors duration-200"
-                          style={{
-                            color: selectedFilters["확정"] === option.value
-                              ? "var(--text-primary)"
-                              : "var(--text-secondary)",
-                          }}
-                        >
-                          {option.label}
-                        </span>
-                      </label>
-                    )).map((el, i) => (
                       <div
-                        key={i}
-                        onClick={() => setConfirmStatus(["all", "confirmed", "unconfirmed"][i] as ConfirmStatus)}
+                        key={option.value}
+                        onClick={() => setConfirmStatus(option.value as ConfirmStatus)}
                       >
-                        {el}
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <div
+                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                              selectedFilters["확정"] === option.value
+                                ? "border-[#667eea] bg-[#667eea]"
+                                : "border-gray-400 group-hover:border-[#667eea]/50"
+                            }`}
+                          >
+                            {selectedFilters["확정"] === option.value && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                            )}
+                          </div>
+                          <span
+                            className="text-sm transition-colors duration-200"
+                            style={{
+                              color: selectedFilters["확정"] === option.value
+                                ? "var(--text-primary)"
+                                : "var(--text-secondary)",
+                            }}
+                          >
+                            {option.label}
+                          </span>
+                        </label>
                       </div>
                     ))}
                   </div>
@@ -793,20 +832,20 @@ export default function TrackFinder() {
                               <div
                                 className="w-7 h-7 rounded-full flex items-center justify-center mx-auto text-sm font-bold"
                                 style={{
-                                  backgroundColor: gender === "남"
+                                  backgroundColor: gender === "남자"
                                     ? "rgba(59, 130, 246, 0.15)"
-                                    : gender === "여"
+                                    : gender === "여자"
                                       ? "rgba(236, 72, 153, 0.15)"
                                       : "rgba(139, 92, 246, 0.15)",
-                                  color: gender === "남"
+                                  color: gender === "남자"
                                     ? "#3b82f6"
-                                    : gender === "여"
+                                    : gender === "여자"
                                       ? "#ec4899"
                                       : "#8b5cf6",
                                 }}
                                 title={gender}
                               >
-                                {gender === "남" ? "♂" : gender === "여" ? "♀" : "⚥"}
+                                {gender === "남자" ? "♂" : gender === "여자" ? "♀" : "⚥"}
                               </div>
                             </td>
                             <td className="px-3 py-3">
@@ -852,20 +891,30 @@ export default function TrackFinder() {
           </div>
         </div>
       </div>
+    </AppLayout>
 
-      {/* Song Detail Modal */}
-      {selectedSong && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(8px)" }}
-          onClick={closeSongModal}
-        >
+    {isMounted && selectedSong && createPortal(
+      <div
+        className="fixed inset-0 z-50 p-4"
+        style={{
+          backgroundColor: "rgba(0, 0, 0, 0.6)",
+          backdropFilter: "blur(8px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflowY: "auto"
+        }}
+        onClick={closeSongModal}
+      >
           <div
-            className="w-full max-w-lg rounded-3xl p-6 relative animate-slide-up"
+            className="w-full max-w-lg rounded-3xl p-6 relative"
             style={{
               backgroundColor: "var(--bg-primary)",
               border: "1px solid var(--border-glass)",
               boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              margin: "auto 0"
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -883,14 +932,26 @@ export default function TrackFinder() {
             </h2>
 
             {/* Audio Player */}
-            {selectedSong.properties.Link?.url && (
+            {loadingLink ? (
+              <div
+                className="mb-6 p-4 rounded-2xl text-center"
+                style={{ backgroundColor: "var(--surface-glass)", border: "1px solid var(--border-glass)" }}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-[#667eea] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
+                    오디오 로딩 중...
+                  </p>
+                </div>
+              </div>
+            ) : audioLink ? (
               <div
                 className="mb-6 p-4 rounded-2xl"
                 style={{ backgroundColor: "var(--surface-glass)", border: "1px solid var(--border-glass)" }}
               >
                 <audio
                   ref={audioRef}
-                  src={selectedSong.properties.Link?.url}
+                  src={audioLink}
                   onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
                   onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
                   onEnded={() => setIsPlaying(false)}
@@ -899,7 +960,7 @@ export default function TrackFinder() {
                 {/* Progress Bar */}
                 <div
                   className="h-2 rounded-full mb-3 cursor-pointer"
-                  style={{ backgroundColor: "var(--progress-track)" }}
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
                   onClick={handleProgressClick}
                 >
                   <div
@@ -932,6 +993,15 @@ export default function TrackFinder() {
                   </span>
                 </div>
               </div>
+            ) : (
+              <div
+                className="mb-6 p-4 rounded-2xl text-center"
+                style={{ backgroundColor: "var(--surface-glass)", border: "1px solid var(--border-glass)" }}
+              >
+                <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
+                  오디오 파일이 없습니다
+                </p>
+              </div>
             )}
 
             {/* Song Details */}
@@ -960,14 +1030,14 @@ export default function TrackFinder() {
                   style={{ backgroundColor: "var(--surface-glass)" }}
                 >
                   <span style={{
-                    color: selectedSong.properties.성별?.select?.name === "남"
+                    color: selectedSong.properties.성별?.select?.name === "남자"
                       ? "#3b82f6"
-                      : selectedSong.properties.성별?.select?.name === "여"
+                      : selectedSong.properties.성별?.select?.name === "여자"
                         ? "#ec4899"
                         : "#8b5cf6"
                   }}>
-                    {selectedSong.properties.성별?.select?.name === "남" ? "♂" :
-                     selectedSong.properties.성별?.select?.name === "여" ? "♀" : "⚥"}
+                    {selectedSong.properties.성별?.select?.name === "남자" ? "♂" :
+                     selectedSong.properties.성별?.select?.name === "여자" ? "♀" : "⚥"}
                   </span>
                   <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
                     {selectedSong.properties.성별?.select?.name || "-"}
@@ -993,12 +1063,12 @@ export default function TrackFinder() {
                 <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>참여자</h3>
 
                 {[
-                  { key: "멜로디메이커", icon: "Ⓜ", label: "멜로디" },
-                  { key: "작사", icon: "Ⓛ", label: "작사" },
-                  { key: "포스트프로덕션", icon: "Ⓟ", label: "포스트" },
-                  { key: "스케치트랙메이커", icon: "Ⓢ", label: "스케치" },
-                  { key: "마스터트랙메이커", icon: "Ⓣ", label: "마스터" },
-                ].map(({ key, icon, label }) => {
+                  { key: "멜로디메이커", icon: "Ⓜ" },
+                  { key: "작사", icon: "Ⓛ" },
+                  { key: "포스트프로덕션", icon: "Ⓟ" },
+                  { key: "스케치트랙메이커", icon: "Ⓢ" },
+                  { key: "마스터트랙메이커", icon: "Ⓣ" },
+                ].map(({ key, icon }) => {
                   const prop = selectedSong.properties[key as keyof typeof selectedSong.properties];
                   if (!prop || !("multi_select" in prop) || !prop.multi_select.length) return null;
 
@@ -1027,8 +1097,9 @@ export default function TrackFinder() {
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </AppLayout>
+        </div>,
+      document.body
+    )}
+  </>
   );
 }
