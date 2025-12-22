@@ -1,39 +1,42 @@
 "use client";
-import { useState } from "react";
 
-interface Value {
-  prop: string;
-  type: any;
+import { useFilterStore, ConfirmStatus } from "@/stores/filterStore";
+
+interface ToggleBoxProps {
+  property: string;
 }
-export default function ToggleBox({ prop, type }: Value) {
-  const [isToggled, setIsToggled] = useState(false);
-  // const [, setValue] = useState(null);
+
+export default function ToggleBox({ property }: ToggleBoxProps) {
+  const { selectedFilters, setConfirmStatus } = useFilterStore();
+
+  // 확정 필터의 경우 ConfirmStatus 값으로 처리
+  const isToggled = selectedFilters[property] === "confirmed";
 
   const handleToggle = () => {
-    setIsToggled(!isToggled);
+    if (property === "확정") {
+      setConfirmStatus(isToggled ? "all" : "confirmed");
+    }
   };
 
   return (
-    <>
-      <div className="flex items-center border border-red-100 mb-10">
+    <div className="flex items-center justify-center">
+      <div
+        onClick={handleToggle}
+        className={`cursor-pointer w-14 h-8 flex items-center rounded-full p-1 transition-colors duration-300 ${
+          isToggled
+            ? "bg-gradient-to-r from-[#667eea] to-[#764ba2]"
+            : "bg-gray-600"
+        }`}
+      >
         <div
-          onClick={handleToggle}
-          className={`cursor-pointer w-14 h-8 flex items-center rounded-full p-1
-          ${
-            isToggled
-              ? "bg-green-500"
-              : `${prop === "성별" ? "bg-red-500" : "bg-gray-300"}`
+          className={`bg-white w-6 h-6 rounded-full shadow-md transform duration-300 ${
+            isToggled ? "translate-x-6" : "translate-x-0"
           }`}
-        >
-          <div
-            className={`bg-white w-6 h-6 rounded-full shadow-md transform duration-300
-            ${isToggled ? "translate-x-6" : "translate-x-0"}`}
-          />
-        </div>
-        <span className="ml-2 text-lg w-8 text-center">
-          {prop === "성별" ? (isToggled ? "남" : "여") : isToggled ? "O" : "X"}
-        </span>
+        />
       </div>
-    </>
+      <span className="ml-2 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        {isToggled ? "ON" : "OFF"}
+      </span>
+    </div>
   );
 }

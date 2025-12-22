@@ -2,16 +2,16 @@
 
 import Button from "./Button";
 
-interface Type {
-  prop: string;
-  type: any;
+interface MultiSelectProps {
+  property: string;
+  options: any;
 }
 
-export default function MultiSelect({ prop, type }: Type) {
+export default function MultiSelect({ property, options }: MultiSelectProps) {
   return (
     <>
-      {Object.keys(type).map((key) => (
-        <Button key={key} value={key} />
+      {Object.keys(options).map((key) => (
+        <Button key={key} property={property} value={key} />
       ))}
     </>
   );
