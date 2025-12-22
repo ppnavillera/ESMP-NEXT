@@ -692,31 +692,18 @@ export default function TrackFinder() {
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 mt-6">
+              {/* Action Button */}
+              <div className="mt-6">
                 <button
                   onClick={handleClear}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.02]"
+                  className="w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.02]"
                   style={{
                     backgroundColor: "var(--bg-secondary)",
                     border: "1px solid var(--border-glass)",
                     color: "var(--text-secondary)",
                   }}
                 >
-                  초기화
-                </button>
-                <button
-                  onClick={handleSearch}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
-                  style={{
-                    background: "linear-gradient(135deg, #667eea, #764ba2)",
-                    color: "white",
-                  }}
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    <MagnifyingGlassIcon className="w-4 h-4" />
-                    검색
-                  </span>
+                  필터 초기화
                 </button>
               </div>
             </div>
