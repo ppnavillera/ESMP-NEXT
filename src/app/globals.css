@@ -206,6 +206,8 @@ body::before {
       transparent 50%
     );
   animation: floatingGradient 20s ease infinite;
+  animation-fill-mode: both;
+  will-change: transform;
   z-index: -1;
   transition: opacity 0.3s ease;
 }
@@ -445,6 +447,33 @@ body {
   .glass-effect > * {
     position: relative;
     z-index: 2;
+  }
+
+  /* .glass-effect > *:not(table):not(div):not(form) {
+    position: relative;
+    z-index: 2;
+  } */
+
+  .glass-effect-static {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.4)
+    );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass);
+    position: relative;
+    overflow: visible;
+    transition: all 0.3s ease;
+  }
+
+  .dark .glass-effect-static {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.12)
+    );
   }
   .scroll-container::-webkit-scrollbar {
     width: 4px;

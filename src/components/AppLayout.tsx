@@ -9,17 +9,19 @@ interface AppLayoutProps {
   children: ReactNode;
   title?: string;
   showNav?: boolean;
+  disableAnimation?: boolean;
 }
 
 export default function AppLayout({
   children,
   title,
   showNav = true,
+  disableAnimation = false,
 }: AppLayoutProps) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
-      <div className="w-full max-w-5xl animate-slide-up ">
-        <div className="glass-effect rounded-[30px] p-8 md:p-10 shadow-2xl">
+      <div className="w-full max-w-5xl animate-slide-up">
+        <div className={`${disableAnimation ? 'glass-effect-static' : 'glass-effect'} rounded-[30px] p-8 md:p-10 shadow-2xl`}>
           {/* Navigation Header */}
           {showNav && (
             <div className="flex justify-between items-center mb-8">

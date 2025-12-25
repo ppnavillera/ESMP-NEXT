@@ -354,7 +354,7 @@ export default function TrackFinder() {
 
   return (
     <>
-    <AppLayout>
+    <AppLayout disableAnimation={true}>
       <div className="min-h-[80vh]">
         {/* Header */}
         <div className="mb-8">
