@@ -31,43 +31,17 @@ import {
 
 interface Song {
   properties: {
-    Title: {
-      title: {
-        text: {
-          content: string;
-        };
-      }[];
-    };
-    멜로디메이커?: {
-      multi_select: { name: string }[];
-    };
-    작사?: {
-      multi_select: { name: string }[];
-    };
-    포스트프로덕션?: {
-      multi_select: { name: string }[];
-    };
-    스케치트랙메이커?: {
-      multi_select: { name: string }[];
-    };
-    마스터트랙메이커?: {
-      multi_select: { name: string }[];
-    };
-    성별?: {
-      select: { name: string };
-    };
-    완성일?: {
-      date: { start: string };
-    };
-    확정?: {
-      checkbox: boolean;
-    };
-    Drop?: {
-      checkbox: boolean;
-    };
-    Rap?: {
-      checkbox: boolean;
-    };
+    Title: { title: { text: { content: string } }[] };
+    멜로디메이커?: { multi_select: { name: string }[] };
+    작사?: { multi_select: { name: string }[] };
+    포스트프로덕션?: { multi_select: { name: string }[] };
+    스케치트랙메이커?: { multi_select: { name: string }[] };
+    마스터트랙메이커?: { multi_select: { name: string }[] };
+    성별?: { select: { name: string } };
+    완성일?: { date: { start: string } };
+    확정?: { checkbox: boolean };
+    Drop?: { checkbox: boolean };
+    Rap?: { checkbox: boolean };
   };
 }
 
@@ -75,13 +49,19 @@ interface Option {
   name: string;
   color: string;
 }
-
 interface Properties {
   [key: string]: string | { [name: string]: string };
 }
 
 type SortField = "title" | "date" | "status";
 type SortOrder = "asc" | "desc";
+
+// ===== 인메모리 캐시 (성능 최적화) =====
+const cache: {
+  tracks?: { data: Song[]; timestamp: number };
+  properties?: { data: Properties; timestamp: number };
+} = {};
+const CACHE_DURATION = 3 * 60 * 1000; // 3분
 
 export default function TrackFinder() {
   const router = useRouter();
@@ -109,7 +89,11 @@ export default function TrackFinder() {
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
 
-  // Portal을 위한 마운트 체크
+  // ===== 최적화를 위한 ref들 =====
+  const [initialModalOpened, setInitialModalOpened] = useState(false);
+  const initialLoadDone = useRef(false);
+  const fetchInProgress = useRef(false);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -129,11 +113,9 @@ export default function TrackFinder() {
 
   const activeFilters = getActiveFilters();
 
-  // 검색 + 정렬된 데이터
+  // 검색 + 정렬
   const sortedData = useMemo(() => {
     let filtered = data;
-
-    // 검색어 필터링
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = data.filter((song) => {
@@ -141,78 +123,97 @@ export default function TrackFinder() {
         return title.toLowerCase().includes(query);
       });
     }
-
-    // 정렬
     return [...filtered].sort((a, b) => {
       let comparison = 0;
-
       switch (sortField) {
         case "title":
-          const titleA = a.properties.Title.title[0]?.text.content || "";
-          const titleB = b.properties.Title.title[0]?.text.content || "";
-          comparison = titleA.localeCompare(titleB, "ko");
+          comparison = (
+            a.properties.Title.title[0]?.text.content || ""
+          ).localeCompare(
+            b.properties.Title.title[0]?.text.content || "",
+            "ko"
+          );
           break;
         case "date":
-          const dateA = a.properties.완성일?.date?.start || "";
-          const dateB = b.properties.완성일?.date?.start || "";
-          comparison = dateA.localeCompare(dateB);
+          comparison = (a.properties.완성일?.date?.start || "").localeCompare(
+            b.properties.완성일?.date?.start || ""
+          );
           break;
         case "status":
-          const statusA = a.properties.확정?.checkbox ? 1 : 0;
-          const statusB = b.properties.확정?.checkbox ? 1 : 0;
-          comparison = statusA - statusB;
+          comparison =
+            (a.properties.확정?.checkbox ? 1 : 0) -
+            (b.properties.확정?.checkbox ? 1 : 0);
           break;
       }
-
       return sortOrder === "asc" ? comparison : -comparison;
     });
   }, [data, sortField, sortOrder, searchQuery]);
 
-  const fetchTracks = async (withFilter = false) => {
-    setIsLoading(true);
-    try {
-      const filter = withFilter ? buildNotionFilter() : undefined;
+  // ===== 트랙 데이터 fetch (캐싱 적용) =====
+  const fetchTracks = useCallback(
+    async (withFilter = false) => {
+      if (fetchInProgress.current) return;
 
-      if (filter) {
-        const resp = await fetch("/api/notion", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filter }),
-        });
+      // 필터 없는 요청은 캐시 확인
+      if (!withFilter && cache.tracks) {
+        const { data: cachedData, timestamp } = cache.tracks;
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          setData(cachedData);
+          return;
+        }
+      }
+
+      fetchInProgress.current = true;
+      setIsLoading(true);
+
+      try {
+        const filter = withFilter ? buildNotionFilter() : undefined;
+        const resp = filter
+          ? await fetch("/api/notion", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ filter }),
+            })
+          : await fetch("/api/notion");
+
         if (resp.ok) {
           const respData = await resp.json();
-          setData(
-            respData.message ? [] : Array.isArray(respData) ? respData : []
-          );
+          const tracks = respData.message
+            ? []
+            : Array.isArray(respData)
+            ? respData
+            : [];
+          setData(tracks);
+          if (!filter) cache.tracks = { data: tracks, timestamp: Date.now() };
         } else {
           setData([]);
         }
-      } else {
-        const resp = await fetch("/api/notion", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-        const respData = await resp.json();
-        setData(Array.isArray(respData) ? respData : []);
+      } catch (error) {
+        console.error("Error fetching tracks:", error);
+        setData([]);
+      } finally {
+        setIsLoading(false);
+        fetchInProgress.current = false;
       }
-    } catch (error) {
-      console.error("Error fetching tracks:", error);
-      setData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [buildNotionFilter]
+  );
 
-  const fetchProps = async () => {
+  // 속성 fetch (캐싱 적용)
+  const fetchProps = useCallback(async () => {
+    if (cache.properties) {
+      const { data: cachedData, timestamp } = cache.properties;
+      if (Date.now() - timestamp < CACHE_DURATION) {
+        setProperties(cachedData);
+        return;
+      }
+    }
+
     try {
-      const resp = await fetch("/api/properties", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+      const resp = await fetch("/api/properties");
       const respData = await resp.json();
       const props = respData.properties;
       const newProperties: Properties = {};
-
       const order = [
         "완성일",
         "확정",
@@ -230,16 +231,16 @@ export default function TrackFinder() {
       for (const key of order) {
         if (key in props) {
           if (["영어 제목", "가이드비", "Title"].includes(key)) continue;
-
-          if (props[key].type === "multi_select") {
+          if (
+            props[key].type === "multi_select" ||
+            props[key].type === "select"
+          ) {
             const values: { [name: string]: string } = {};
-            props[key].multi_select.options.forEach((el: Option) => {
-              values[el.name] = el.color;
-            });
-            newProperties[key] = values;
-          } else if (props[key].type === "select") {
-            const values: { [name: string]: string } = {};
-            props[key].select.options.forEach((el: Option) => {
+            const options =
+              props[key].type === "multi_select"
+                ? props[key].multi_select.options
+                : props[key].select.options;
+            options.forEach((el: Option) => {
               values[el.name] = el.color;
             });
             newProperties[key] = values;
@@ -249,203 +250,238 @@ export default function TrackFinder() {
         }
       }
       setProperties(newProperties);
+      cache.properties = { data: newProperties, timestamp: Date.now() };
     } catch (error) {
       console.error("Error fetching properties:", error);
     }
-  };
-
-  useEffect(() => {
-    fetchProps();
-    fetchTracks();
   }, []);
 
-  // 필터 변경 시 자동으로 검색
-  useEffect(() => {
-    fetchTracks(true);
-  }, [selectedFilters]);
-
-  // URL 쿼리 파라미터로 모달 열기
-  useEffect(() => {
-    const songTitle = searchParams.get("song");
-    if (songTitle && data.length > 0 && !selectedSong) {
-      const song = data.find(
-        (s) =>
-          s.properties.Title.title[0]?.text.content ===
-          decodeURIComponent(songTitle)
-      );
-      if (song) {
-        openSongModal(song);
+  // ===== 단일 곡 fetch (URL 직접 접속 최적화) =====
+  const fetchSingleTrack = useCallback(
+    async (title: string): Promise<Song | null> => {
+      try {
+        const resp = await fetch(
+          `/api/track?title=${encodeURIComponent(title)}`
+        );
+        if (resp.ok) return await resp.json();
+      } catch (error) {
+        console.error("Error fetching single track:", error);
       }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, data]);
+      return null;
+    },
+    []
+  );
 
-  const toggleSection = (section: string) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(section)) {
-        next.delete(section);
-      } else {
-        next.add(section);
+  // 오디오 링크 fetch
+  const fetchAudioLink = useCallback(
+    async (title: string): Promise<string | null> => {
+      try {
+        const response = await fetch("/api/get-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return data.link;
+        }
+      } catch (error) {
+        console.error("Error fetching audio link:", error);
       }
-      return next;
-    });
-  };
+      return null;
+    },
+    []
+  );
 
-  const handleClear = () => {
-    clearFilters();
-    fetchTracks(false);
-  };
+  // 모달 열기
+  const openSongModalWithData = useCallback(
+    async (song: Song, updateUrl: boolean = true) => {
+      setSelectedSong(song);
+      setAudioLink(null);
+      setLoadingLink(true);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortOrder("desc");
-    }
-  };
+      const title = song.properties.Title.title[0]?.text.content;
+      if (!title) {
+        setLoadingLink(false);
+        return;
+      }
 
-  // 모달 열기 - Title로 Link 조회
-  const openSongModal = async (song: Song) => {
-    setSelectedSong(song);
-    setAudioLink(null);
-    setLoadingLink(true);
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
+      if (updateUrl) {
+        const params = new URLSearchParams(window.location.search);
+        params.set("song", title);
+        router.push(`?${params.toString()}`, { scroll: false });
+      }
 
-    const title = song.properties.Title.title[0]?.text.content;
-    if (!title) {
+      const link = await fetchAudioLink(title);
+      setAudioLink(link);
       setLoadingLink(false);
+    },
+    [router, fetchAudioLink]
+  );
+
+  // ===== 초기 로드: URL에 song 파라미터가 있으면 먼저 빠르게 모달 열기 =====
+  useEffect(() => {
+    if (initialLoadDone.current) return;
+    initialLoadDone.current = true;
+
+    const songTitle = searchParams.get("song");
+
+    const init = async () => {
+      // URL에 곡 제목이 있으면 단일 곡 API로 빠르게 모달 열기
+      if (songTitle && !initialModalOpened) {
+        setInitialModalOpened(true);
+        const track = await fetchSingleTrack(songTitle);
+        if (track) openSongModalWithData(track, false);
+      }
+
+      // 백그라운드에서 전체 데이터 로드
+      fetchProps();
+      fetchTracks();
+    };
+
+    init();
+  }, [
+    searchParams,
+    initialModalOpened,
+    fetchSingleTrack,
+    openSongModalWithData,
+    fetchProps,
+    fetchTracks,
+  ]);
+
+  // 필터 변경 시 (초기 로드 제외)
+  const isFirstFilterEffect = useRef(true);
+  useEffect(() => {
+    if (isFirstFilterEffect.current) {
+      isFirstFilterEffect.current = false;
       return;
     }
+    fetchTracks(true);
+  }, [selectedFilters, fetchTracks]);
 
-    // URL 업데이트
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("song", encodeURIComponent(title));
-    router.push(`?${params.toString()}`, { scroll: false });
-
-    try {
-      const response = await fetch("/api/get-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAudioLink(data.link);
-      }
-    } catch (error) {
-      console.error("Error fetching audio link:", error);
-    } finally {
-      setLoadingLink(false);
-    }
-  };
-
-  // 모달 열릴 때 body 스크롤 방지
+  // 모달 스크롤 방지
   useEffect(() => {
-    if (selectedSong) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    document.body.style.overflow = selectedSong ? "hidden" : "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
   }, [selectedSong]);
 
-  // 모달 닫기
-  const closeSongModal = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+  const closeSongModal = useCallback(() => {
+    if (audioRef.current) audioRef.current.pause();
     setSelectedSong(null);
     setIsPlaying(false);
-
-    // URL에서 쿼리 파라미터 제거
     router.push("/trackfinder", { scroll: false });
-  };
+  }, [router]);
 
-  // 볼륨 변경
+  const toggleSection = useCallback((section: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      next.has(section) ? next.delete(section) : next.add(section);
+      return next;
+    });
+  }, []);
+
+  const handleClear = useCallback(() => {
+    clearFilters();
+    fetchTracks(false);
+  }, [clearFilters, fetchTracks]);
+
+  const handleSort = useCallback(
+    (field: SortField) => {
+      sortField === field
+        ? setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+        : (setSortField(field), setSortOrder("desc"));
+    },
+    [sortField]
+  );
+
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
+    if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
-  // 재생/일시정지
-  const togglePlayPause = () => {
+  const togglePlayPause = useCallback(() => {
     if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
+    isPlaying ? audioRef.current.pause() : audioRef.current.play();
     setIsPlaying(!isPlaying);
-  };
+  }, [isPlaying]);
 
-  // 시간 포맷
-  const formatTime = (time: number) => {
+  const formatTime = useCallback((time: number) => {
     if (isNaN(time)) return "0:00";
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
+    return `${Math.floor(time / 60)}:${Math.floor(time % 60)
+      .toString()
+      .padStart(2, "0")}`;
+  }, []);
 
-  // 프로그레스 드래그
-  const handleProgressDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
-    if (!progressRef.current || !audioRef.current || !duration) return;
-    const rect = progressRef.current.getBoundingClientRect();
-    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    audioRef.current.currentTime = percent * duration;
-    setCurrentTime(percent * duration);
-  }, [duration]);
+  const handleProgressDrag = useCallback(
+    (e: MouseEvent | React.MouseEvent) => {
+      if (!progressRef.current || !audioRef.current || !duration) return;
+      const rect = progressRef.current.getBoundingClientRect();
+      const percent = Math.max(
+        0,
+        Math.min(1, (e.clientX - rect.left) / rect.width)
+      );
+      audioRef.current.currentTime = percent * duration;
+      setCurrentTime(percent * duration);
+    },
+    [duration]
+  );
 
-  const handleProgressMouseDown = (e: React.MouseEvent) => {
-    setIsDraggingProgress(true);
-    handleProgressDrag(e);
-  };
+  const handleProgressMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      setIsDraggingProgress(true);
+      handleProgressDrag(e);
+    },
+    [handleProgressDrag]
+  );
 
-  // 볼륨 드래그
   const handleVolumeDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
     if (!volumeRef.current || !audioRef.current) return;
     const rect = volumeRef.current.getBoundingClientRect();
-    const newVolume = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const newVolume = Math.max(
+      0,
+      Math.min(1, (e.clientX - rect.left) / rect.width)
+    );
     setVolume(newVolume);
     audioRef.current.volume = newVolume;
   }, []);
 
-  const handleVolumeMouseDown = (e: React.MouseEvent) => {
-    setIsDraggingVolume(true);
-    handleVolumeDrag(e);
-  };
+  const handleVolumeMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      setIsDraggingVolume(true);
+      handleVolumeDrag(e);
+    },
+    [handleVolumeDrag]
+  );
 
-  // 드래그 이벤트 리스너
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDraggingProgress) handleProgressDrag(e);
       if (isDraggingVolume) handleVolumeDrag(e);
     };
-
     const handleMouseUp = () => {
       setIsDraggingProgress(false);
       setIsDraggingVolume(false);
     };
 
     if (isDraggingProgress || isDraggingVolume) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
     }
-
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDraggingProgress, isDraggingVolume, handleProgressDrag, handleVolumeDrag]);
+  }, [
+    isDraggingProgress,
+    isDraggingVolume,
+    handleProgressDrag,
+    handleVolumeDrag,
+  ]);
 
-  // 참여자 필터 옵션들
   const participantFilters = [
     "멜로디메이커",
     "포스트프로덕션",
@@ -453,13 +489,22 @@ export default function TrackFinder() {
     "마스터트랙메이커",
     "작사",
   ];
-
-  // 날짜 범위 가져오기
   const dateRange = (selectedFilters["완성일"] as DateRange) || {
     start: null,
     end: null,
   };
 
+  const handleRowClick = useCallback(
+    (song: Song) => (e: React.MouseEvent<HTMLTableRowElement>) => {
+      if (!e.ctrlKey && !e.metaKey && e.button === 0) {
+        e.preventDefault();
+        openSongModalWithData(song, true);
+      }
+    },
+    [openSongModalWithData]
+  );
+
+  // ===== 렌더링 =====
   return (
     <>
       <AppLayout disableAnimation={true}>
@@ -477,7 +522,7 @@ export default function TrackFinder() {
             </p>
           </div>
 
-          {/* Active Filters Tags */}
+          {/* Active Filters */}
           {activeFilters.length > 0 && (
             <div
               className="mb-6 p-4 rounded-2xl"
@@ -493,39 +538,30 @@ export default function TrackFinder() {
                 >
                   활성 필터:
                 </span>
-                {activeFilters.map(
-                  (
-                    filter: {
-                      property: string;
-                      value: string;
-                      displayValue: string;
-                    },
-                    idx: number
-                  ) => (
-                    <button
-                      key={`${filter.property}-${filter.value}-${idx}`}
-                      onClick={() =>
-                        removeFilter(
-                          filter.property,
-                          filter.value !== "range" ? filter.value : undefined
-                        )
-                      }
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))",
-                        border: "1px solid rgba(102, 126, 234, 0.3)",
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      {filter.displayValue}
-                      <XMarkIcon className="w-3 h-3 opacity-60 hover:opacity-100" />
-                    </button>
-                  )
-                )}
+                {activeFilters.map((filter, idx) => (
+                  <button
+                    key={`${filter.property}-${filter.value}-${idx}`}
+                    onClick={() =>
+                      removeFilter(
+                        filter.property,
+                        filter.value !== "range" ? filter.value : undefined
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))",
+                      border: "1px solid rgba(102, 126, 234, 0.3)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {filter.displayValue}
+                    <XMarkIcon className="w-3 h-3 opacity-60 hover:opacity-100" />
+                  </button>
+                ))}
                 <button
                   onClick={handleClear}
-                  className="text-xs underline transition-colors duration-200"
+                  className="text-xs underline"
                   style={{ color: "var(--text-tertiary)" }}
                 >
                   전체 초기화
@@ -545,7 +581,6 @@ export default function TrackFinder() {
                   backdropFilter: "blur(20px)",
                 }}
               >
-                {/* Filter Header */}
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-2">
                     <AdjustmentsHorizontalIcon
@@ -561,7 +596,7 @@ export default function TrackFinder() {
                   </div>
                 </div>
 
-                {/* Status Filter Section */}
+                {/* Status Filter */}
                 <div className="mb-4">
                   <button
                     onClick={() => toggleSection("status")}
@@ -618,7 +653,7 @@ export default function TrackFinder() {
                               )}
                             </div>
                             <span
-                              className="text-sm transition-colors duration-200"
+                              className="text-sm"
                               style={{
                                 color:
                                   selectedFilters["확정"] === option.value
@@ -632,7 +667,6 @@ export default function TrackFinder() {
                         </div>
                       ))}
 
-                      {/* Divider */}
                       <div
                         className="h-px my-3"
                         style={{
@@ -641,114 +675,63 @@ export default function TrackFinder() {
                         }}
                       />
 
-                      {/* Drop Filter */}
-                      <div className="mb-3">
-                        <label
-                          className="text-xs font-medium mb-2 block"
-                          style={{ color: "var(--text-tertiary)" }}
-                        >
-                          Drop
-                        </label>
-                        <div className="flex gap-2">
-                          {[
-                            { value: "all", label: "전체" },
-                            { value: "yes", label: "있음" },
-                            { value: "no", label: "없음" },
-                          ].map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() =>
-                                setToggleFilter(
-                                  "Drop",
-                                  option.value as ToggleStatus
-                                )
-                              }
-                              className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                                (selectedFilters["Drop"] || "all") ===
-                                option.value
-                                  ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white"
-                                  : ""
-                              }`}
-                              style={{
-                                backgroundColor:
-                                  (selectedFilters["Drop"] || "all") ===
+                      {/* Drop/Rap Filters */}
+                      {["Drop", "Rap"].map((filterType) => (
+                        <div key={filterType} className="mb-3">
+                          <label
+                            className="text-xs font-medium mb-2 block"
+                            style={{ color: "var(--text-tertiary)" }}
+                          >
+                            {filterType}
+                          </label>
+                          <div className="flex gap-2">
+                            {[
+                              { value: "all", label: "전체" },
+                              { value: "yes", label: "있음" },
+                              { value: "no", label: "없음" },
+                            ].map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() =>
+                                  setToggleFilter(
+                                    filterType,
+                                    option.value as ToggleStatus
+                                  )
+                                }
+                                className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                                  (selectedFilters[filterType] || "all") ===
                                   option.value
-                                    ? undefined
-                                    : "var(--bg-secondary)",
-                                border:
-                                  (selectedFilters["Drop"] || "all") ===
-                                  option.value
-                                    ? "none"
-                                    : "1px solid var(--border-glass)",
-                                color:
-                                  (selectedFilters["Drop"] || "all") ===
-                                  option.value
-                                    ? "white"
-                                    : "var(--text-secondary)",
-                              }}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
+                                    ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white"
+                                    : ""
+                                }`}
+                                style={{
+                                  backgroundColor:
+                                    (selectedFilters[filterType] || "all") ===
+                                    option.value
+                                      ? undefined
+                                      : "var(--bg-secondary)",
+                                  border:
+                                    (selectedFilters[filterType] || "all") ===
+                                    option.value
+                                      ? "none"
+                                      : "1px solid var(--border-glass)",
+                                  color:
+                                    (selectedFilters[filterType] || "all") ===
+                                    option.value
+                                      ? "white"
+                                      : "var(--text-secondary)",
+                                }}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-
-                      {/* Rap Filter */}
-                      <div>
-                        <label
-                          className="text-xs font-medium mb-2 block"
-                          style={{ color: "var(--text-tertiary)" }}
-                        >
-                          Rap
-                        </label>
-                        <div className="flex gap-2">
-                          {[
-                            { value: "all", label: "전체" },
-                            { value: "yes", label: "있음" },
-                            { value: "no", label: "없음" },
-                          ].map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() =>
-                                setToggleFilter(
-                                  "Rap",
-                                  option.value as ToggleStatus
-                                )
-                              }
-                              className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                                (selectedFilters["Rap"] || "all") ===
-                                option.value
-                                  ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white"
-                                  : ""
-                              }`}
-                              style={{
-                                backgroundColor:
-                                  (selectedFilters["Rap"] || "all") ===
-                                  option.value
-                                    ? undefined
-                                    : "var(--bg-secondary)",
-                                border:
-                                  (selectedFilters["Rap"] || "all") ===
-                                  option.value
-                                    ? "none"
-                                    : "1px solid var(--border-glass)",
-                                color:
-                                  (selectedFilters["Rap"] || "all") ===
-                                  option.value
-                                    ? "white"
-                                    : "var(--text-secondary)",
-                              }}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                {/* Divider */}
                 <div
                   className="h-px my-4"
                   style={{
@@ -757,7 +740,7 @@ export default function TrackFinder() {
                   }}
                 />
 
-                {/* Basic Filters Section */}
+                {/* Basic Filters */}
                 <div className="mb-4">
                   <button
                     onClick={() => toggleSection("basic")}
@@ -790,7 +773,6 @@ export default function TrackFinder() {
 
                   {expandedSections.has("basic") && (
                     <div className="mt-3 space-y-4 pl-6">
-                      {/* Gender Select */}
                       {properties["성별"] &&
                         typeof properties["성별"] === "object" && (
                           <div>
@@ -805,7 +787,7 @@ export default function TrackFinder() {
                               onChange={(e) =>
                                 setSelectFilter("성별", e.target.value || null)
                               }
-                              className="w-full px-3 py-2 rounded-xl text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#667eea]/50"
+                              className="w-full px-3 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#667eea]/50"
                               style={{
                                 backgroundColor: "var(--bg-secondary)",
                                 border: "1px solid var(--border-glass)",
@@ -822,7 +804,6 @@ export default function TrackFinder() {
                           </div>
                         )}
 
-                      {/* Date Range */}
                       <div>
                         <label
                           className="text-xs font-medium mb-2 block"
@@ -840,13 +821,12 @@ export default function TrackFinder() {
                                 start: e.target.value || null,
                               })
                             }
-                            className="w-full px-3 py-2 rounded-xl text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#667eea]/50"
+                            className="w-full px-3 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#667eea]/50"
                             style={{
                               backgroundColor: "var(--bg-secondary)",
                               border: "1px solid var(--border-glass)",
                               color: "var(--text-primary)",
                             }}
-                            placeholder="시작일"
                           />
                           <div
                             className="text-center text-xs"
@@ -863,13 +843,12 @@ export default function TrackFinder() {
                                 end: e.target.value || null,
                               })
                             }
-                            className="w-full px-3 py-2 rounded-xl text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#667eea]/50"
+                            className="w-full px-3 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#667eea]/50"
                             style={{
                               backgroundColor: "var(--bg-secondary)",
                               border: "1px solid var(--border-glass)",
                               color: "var(--text-primary)",
                             }}
-                            placeholder="종료일"
                           />
                         </div>
                       </div>
@@ -877,7 +856,6 @@ export default function TrackFinder() {
                   )}
                 </div>
 
-                {/* Divider */}
                 <div
                   className="h-px my-4"
                   style={{
@@ -886,7 +864,7 @@ export default function TrackFinder() {
                   }}
                 />
 
-                {/* Participant Filters Section */}
+                {/* Participant Filters */}
                 <div className="mb-4">
                   <button
                     onClick={() => toggleSection("participant")}
@@ -923,7 +901,6 @@ export default function TrackFinder() {
                         const options = properties[filterName];
                         if (!options || typeof options !== "object")
                           return null;
-
                         const selectedValues =
                           (selectedFilters[filterName] as string[]) || [];
 
@@ -973,7 +950,6 @@ export default function TrackFinder() {
                   )}
                 </div>
 
-                {/* Action Button */}
                 <div className="mt-6">
                   <button
                     onClick={handleClear}
@@ -1016,7 +992,7 @@ export default function TrackFinder() {
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      className="p-1 rounded-lg transition-colors hover:bg-white/10"
+                      className="p-1 rounded-lg hover:bg-white/10"
                     >
                       <XMarkIcon
                         className="w-4 h-4"
@@ -1058,7 +1034,6 @@ export default function TrackFinder() {
                   </span>
                 </div>
 
-                {/* Sort Controls */}
                 <div className="flex items-center gap-2">
                   <span
                     className="text-xs"
@@ -1078,7 +1053,7 @@ export default function TrackFinder() {
                       <button
                         key={item.field}
                         onClick={() => handleSort(item.field)}
-                        className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                        className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1 ${
                           sortField === item.field
                             ? "bg-[#667eea]/20"
                             : "hover:bg-white/5"
@@ -1200,43 +1175,27 @@ export default function TrackFinder() {
                             title
                           )}`;
 
-                          // 참여자 정보 축약
                           const participants: string[] = [];
-                          if (
-                            song.properties.멜로디메이커?.multi_select.length
-                          ) {
+                          if (song.properties.멜로디메이커?.multi_select.length)
                             participants.push(
                               `Ⓜ ${song.properties.멜로디메이커.multi_select
                                 .map((m) => m.name)
                                 .join(", ")}`
                             );
-                          }
-                          if (song.properties.작사?.multi_select.length) {
+                          if (song.properties.작사?.multi_select.length)
                             participants.push(
                               `Ⓛ ${song.properties.작사.multi_select
                                 .map((l) => l.name)
                                 .join(", ")}`
                             );
-                          }
                           if (
                             song.properties.포스트프로덕션?.multi_select.length
-                          ) {
+                          )
                             participants.push(
                               `Ⓟ ${song.properties.포스트프로덕션.multi_select
                                 .map((p) => p.name)
                                 .join(", ")}`
                             );
-                          }
-
-                          const handleRowClick = (
-                            e: React.MouseEvent<HTMLTableRowElement>
-                          ) => {
-                            // Ctrl/Cmd + 클릭이나 중간 클릭이 아닐 때만 모달 열기
-                            if (!e.ctrlKey && !e.metaKey && e.button === 0) {
-                              e.preventDefault();
-                              openSongModal(song);
-                            }
-                          };
 
                           return (
                             <tr
@@ -1245,7 +1204,7 @@ export default function TrackFinder() {
                               style={{
                                 borderBottom: "1px solid var(--border-glass)",
                               }}
-                              onClick={handleRowClick}
+                              onClick={handleRowClick(song)}
                               data-href={songUrl}
                             >
                               <td className="px-4 py-3">
@@ -1265,10 +1224,8 @@ export default function TrackFinder() {
                                   className="font-medium hover:underline"
                                   style={{ color: "var(--text-primary)" }}
                                   onClick={(e) => {
-                                    // 일반 클릭은 모달로, Ctrl/Cmd 클릭은 새 탭으로
-                                    if (!e.ctrlKey && !e.metaKey) {
+                                    if (!e.ctrlKey && !e.metaKey)
                                       e.preventDefault();
-                                    }
                                   }}
                                 >
                                   {title}
@@ -1411,6 +1368,7 @@ export default function TrackFinder() {
         </div>
       </AppLayout>
 
+      {/* Modal */}
       {isMounted &&
         selectedSong &&
         createPortal(
@@ -1438,10 +1396,9 @@ export default function TrackFinder() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
               <button
                 onClick={closeSongModal}
-                className="absolute top-4 right-4 p-2 rounded-xl transition-colors hover:bg-white/10"
+                className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10"
               >
                 <XMarkIcon
                   className="w-5 h-5"
@@ -1449,7 +1406,6 @@ export default function TrackFinder() {
                 />
               </button>
 
-              {/* Song Title */}
               <h2
                 className="text-2xl font-bold mb-6 pr-10"
                 style={{ color: "var(--text-primary)" }}
@@ -1463,16 +1419,25 @@ export default function TrackFinder() {
                 <div
                   className="mb-8 py-12 rounded-3xl text-center"
                   style={{
-                    background: "linear-gradient(145deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08))",
-                    border: "1px solid var(--border-glass)"
+                    background:
+                      "linear-gradient(145deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08))",
+                    border: "1px solid var(--border-glass)",
                   }}
                 >
                   <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center"
-                      style={{ background: "linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))" }}>
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))",
+                      }}
+                    >
                       <div className="w-5 h-5 border-2 border-[#667eea] border-t-transparent rounded-full animate-spin" />
                     </div>
-                    <p className="text-sm font-medium" style={{ color: "var(--text-tertiary)" }}>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
                       오디오 로딩 중...
                     </p>
                   </div>
@@ -1481,25 +1446,32 @@ export default function TrackFinder() {
                 <div
                   className="mb-8 rounded-3xl overflow-hidden"
                   style={{
-                    background: "linear-gradient(165deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.08) 50%, rgba(102, 126, 234, 0.05) 100%)",
+                    background:
+                      "linear-gradient(165deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.08) 50%, rgba(102, 126, 234, 0.05) 100%)",
                     border: "1px solid rgba(102, 126, 234, 0.2)",
-                    boxShadow: "0 8px 32px rgba(102, 126, 234, 0.1), inset 0 1px 0 rgba(255,255,255,0.1)"
+                    boxShadow:
+                      "0 8px 32px rgba(102, 126, 234, 0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
                   }}
                 >
                   <audio
                     ref={audioRef}
                     src={audioLink}
-                    onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
-                    onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+                    onTimeUpdate={() =>
+                      setCurrentTime(audioRef.current?.currentTime || 0)
+                    }
+                    onLoadedMetadata={() =>
+                      setDuration(audioRef.current?.duration || 0)
+                    }
                     onEnded={() => setIsPlaying(false)}
                   />
 
-                  {/* Waveform Visual Decoration */}
                   <div className="px-6 pt-6 pb-2">
                     <div className="flex items-end justify-center gap-[3px] h-12 opacity-60">
                       {[...Array(32)].map((_, i) => {
                         const height = Math.sin((i / 32) * Math.PI) * 100;
-                        const isActive = duration ? (i / 32) <= (currentTime / duration) : false;
+                        const isActive = duration
+                          ? i / 32 <= currentTime / duration
+                          : false;
                         return (
                           <div
                             key={i}
@@ -1516,81 +1488,92 @@ export default function TrackFinder() {
                     </div>
                   </div>
 
-                  {/* Main Controls */}
                   <div className="px-6 pb-6">
-                    {/* Progress Section */}
                     <div className="mb-6">
-                      {/* Time Display - Above Progress Bar */}
                       <div className="flex justify-between mb-2.5">
                         <span
                           className="text-sm font-semibold tabular-nums"
                           style={{
-                            background: "linear-gradient(135deg, #667eea, #a855f7)",
+                            background:
+                              "linear-gradient(135deg, #667eea, #a855f7)",
                             WebkitBackgroundClip: "text",
                             backgroundClip: "text",
-                            color: "transparent"
+                            color: "transparent",
                           }}
                         >
                           {formatTime(currentTime)}
                         </span>
-                        <span className="text-sm font-medium tabular-nums" style={{ color: "var(--text-tertiary)" }}>
+                        <span
+                          className="text-sm font-medium tabular-nums"
+                          style={{ color: "var(--text-tertiary)" }}
+                        >
                           {formatTime(duration)}
                         </span>
                       </div>
 
-                      {/* Progress Bar */}
                       <div
                         ref={progressRef}
                         className="h-2.5 rounded-full cursor-pointer relative group overflow-visible"
                         style={{
                           backgroundColor: "rgba(255, 255, 255, 0.08)",
-                          boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)"
+                          boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
                         }}
                         onMouseDown={handleProgressMouseDown}
                       >
-                        {/* Progress Fill */}
                         <div
                           className="h-full rounded-full relative transition-all overflow-visible"
                           style={{
-                            width: `${duration ? (currentTime / duration) * 100 : 0}%`,
-                            background: "linear-gradient(90deg, #667eea 0%, #a855f7 50%, #ec4899 100%)",
-                            boxShadow: "0 0 12px rgba(102, 126, 234, 0.5)"
+                            width: `${
+                              duration ? (currentTime / duration) * 100 : 0
+                            }%`,
+                            background:
+                              "linear-gradient(90deg, #667eea 0%, #a855f7 50%, #ec4899 100%)",
+                            boxShadow: "0 0 12px rgba(102, 126, 234, 0.5)",
                           }}
                         >
-                          {/* Glow Effect */}
                           <div
                             className="absolute right-0 top-1/2 w-5 h-5 rounded-full transition-transform duration-150"
                             style={{
-                              background: "linear-gradient(135deg, #ffffff, #e0e7ff)",
-                              boxShadow: "0 0 0 4px rgba(102, 126, 234, 0.3), 0 2px 8px rgba(0,0,0,0.2)",
-                              transform: `translate(50%, -50%) scale(${isDraggingProgress ? 1.2 : 1})`
+                              background:
+                                "linear-gradient(135deg, #ffffff, #e0e7ff)",
+                              boxShadow:
+                                "0 0 0 4px rgba(102, 126, 234, 0.3), 0 2px 8px rgba(0,0,0,0.2)",
+                              transform: `translate(50%, -50%) scale(${
+                                isDraggingProgress ? 1.2 : 1
+                              })`,
                             }}
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Bottom Controls Row */}
                     <div className="flex items-center justify-between">
-                      {/* Volume Control - Left */}
                       <div className="flex items-center gap-3 w-36">
                         <button
                           onClick={() => {
                             const newVol = volume > 0 ? 0 : 1;
                             setVolume(newVol);
-                            if (audioRef.current) audioRef.current.volume = newVol;
+                            if (audioRef.current)
+                              audioRef.current.volume = newVol;
                           }}
                           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
                           style={{
-                            background: volume === 0
-                              ? "rgba(239, 68, 68, 0.15)"
-                              : "rgba(102, 126, 234, 0.15)"
+                            background:
+                              volume === 0
+                                ? "rgba(239, 68, 68, 0.15)"
+                                : "rgba(102, 126, 234, 0.15)",
                           }}
                         >
                           {volume === 0 ? (
-                            <SpeakerXMarkIcon className="w-5 h-5" style={{ color: "#ef4444" }} />
+                            <SpeakerXMarkIcon
+                              className="w-5 h-5"
+                              style={{ color: "#ef4444" }}
+                            />
                           ) : (
-                            <SpeakerWaveIcon className="w-5 h-5" style={{ color: "#667eea" }} />
+                            <SpeakerWaveIcon
+                              className="w-5 h-5"
+                              style={{ color: "#667eea" }}
+                            />
                           )}
                         </button>
 
@@ -1599,7 +1582,7 @@ export default function TrackFinder() {
                           className="flex-1 h-2 rounded-full cursor-pointer relative overflow-visible"
                           style={{
                             backgroundColor: "rgba(255, 255, 255, 0.08)",
-                            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)"
+                            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
                           }}
                           onMouseDown={handleVolumeMouseDown}
                         >
@@ -1607,7 +1590,8 @@ export default function TrackFinder() {
                             className="h-full rounded-full relative overflow-visible"
                             style={{
                               width: `${volume * 100}%`,
-                              background: "linear-gradient(90deg, #667eea 0%, #a855f7 100%)",
+                              background:
+                                "linear-gradient(90deg, #667eea 0%, #a855f7 100%)",
                             }}
                           >
                             <div
@@ -1615,33 +1599,32 @@ export default function TrackFinder() {
                               style={{
                                 background: "white",
                                 boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
-                                transform: `translate(50%, -50%) scale(${isDraggingVolume ? 1.3 : 1})`
+                                transform: `translate(50%, -50%) scale(${
+                                  isDraggingVolume ? 1.3 : 1
+                                })`,
                               }}
                             />
                           </div>
                         </div>
                       </div>
 
-                      {/* Play/Pause Button - Center */}
                       <button
                         onClick={togglePlayPause}
-                        className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 group relative"
+                        className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
                         style={{
-                          background: "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #ec4899 100%)",
-                          boxShadow: "0 8px 32px rgba(102, 126, 234, 0.4), 0 4px 12px rgba(118, 75, 162, 0.3)"
+                          background:
+                            "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #ec4899 100%)",
+                          boxShadow:
+                            "0 8px 32px rgba(102, 126, 234, 0.4), 0 4px 12px rgba(118, 75, 162, 0.3)",
                         }}
                       >
-                        {/* Icon Container */}
-                        <div className="relative z-10">
-                          {isPlaying ? (
-                            <PauseIcon className="w-7 h-7 text-white" />
-                          ) : (
-                            <PlayIcon className="w-7 h-7 text-white ml-1" />
-                          )}
-                        </div>
+                        {isPlaying ? (
+                          <PauseIcon className="w-7 h-7 text-white" />
+                        ) : (
+                          <PlayIcon className="w-7 h-7 text-white ml-1" />
+                        )}
                       </button>
 
-                      {/* Spacer for balance */}
                       <div className="w-36"></div>
                     </div>
                   </div>
@@ -1650,16 +1633,25 @@ export default function TrackFinder() {
                 <div
                   className="mb-8 py-12 rounded-3xl text-center"
                   style={{
-                    background: "linear-gradient(145deg, rgba(100, 100, 100, 0.05), rgba(100, 100, 100, 0.02))",
-                    border: "1px solid var(--border-glass)"
+                    background:
+                      "linear-gradient(145deg, rgba(100, 100, 100, 0.05), rgba(100, 100, 100, 0.02))",
+                    border: "1px solid var(--border-glass)",
                   }}
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                      style={{ background: "rgba(100, 100, 100, 0.1)" }}>
-                      <MusicalNoteIcon className="w-7 h-7" style={{ color: "var(--text-tertiary)" }} />
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                      style={{ background: "rgba(100, 100, 100, 0.1)" }}
+                    >
+                      <MusicalNoteIcon
+                        className="w-7 h-7"
+                        style={{ color: "var(--text-tertiary)" }}
+                      />
                     </div>
-                    <p className="text-sm font-medium" style={{ color: "var(--text-tertiary)" }}>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
                       오디오 파일이 없습니다
                     </p>
                   </div>
@@ -1668,7 +1660,6 @@ export default function TrackFinder() {
 
               {/* Song Details */}
               <div className="space-y-3">
-                {/* Status & Gender & Date */}
                 <div className="flex gap-3 flex-wrap">
                   <div
                     className="flex items-center gap-2 px-3 py-2 rounded-xl"
@@ -1699,7 +1690,6 @@ export default function TrackFinder() {
                       </>
                     )}
                   </div>
-
                   {selectedSong.properties.Drop?.checkbox && (
                     <div
                       className="flex items-center gap-2 px-3 py-2 rounded-xl"
@@ -1713,7 +1703,6 @@ export default function TrackFinder() {
                       </span>
                     </div>
                   )}
-
                   {selectedSong.properties.Rap?.checkbox && (
                     <div
                       className="flex items-center gap-2 px-3 py-2 rounded-xl"
@@ -1727,7 +1716,6 @@ export default function TrackFinder() {
                       </span>
                     </div>
                   )}
-
                   <div
                     className="flex items-center gap-2 px-3 py-2 rounded-xl"
                     style={{ backgroundColor: "var(--surface-glass)" }}
@@ -1756,7 +1744,6 @@ export default function TrackFinder() {
                       {selectedSong.properties.성별?.select?.name || "-"}
                     </span>
                   </div>
-
                   <div
                     className="flex items-center gap-2 px-3 py-2 rounded-xl"
                     style={{ backgroundColor: "var(--surface-glass)" }}
@@ -1774,7 +1761,6 @@ export default function TrackFinder() {
                   </div>
                 </div>
 
-                {/* Participants */}
                 <div
                   className="p-4 rounded-xl"
                   style={{ backgroundColor: "var(--surface-glass)" }}
@@ -1785,30 +1771,13 @@ export default function TrackFinder() {
                   >
                     참여자
                   </h3>
-
                   {[
-                    {
-                      key: "멜로디메이커",
-                      label: "멜로디메이커",
-                      color: "#667eea",
-                    },
-                    { key: "작사", label: "작사", color: "#8b5cf6" },
-                    {
-                      key: "포스트프로덕션",
-                      label: "포스트프로덕션",
-                      color: "#3b82f6",
-                    },
-                    {
-                      key: "스케치트랙메이커",
-                      label: "스케치트랙메이커",
-                      color: "#06b6d4",
-                    },
-                    {
-                      key: "마스터트랙메이커",
-                      label: "마스터트랙메이커",
-                      color: "#ec4899",
-                    },
-                  ].map(({ key, label, color }, index, array) => {
+                    { key: "멜로디메이커", color: "#667eea" },
+                    { key: "작사", color: "#8b5cf6" },
+                    { key: "포스트프로덕션", color: "#3b82f6" },
+                    { key: "스케치트랙메이커", color: "#06b6d4" },
+                    { key: "마스터트랙메이커", color: "#ec4899" },
+                  ].map(({ key, color }, index, array) => {
                     const prop =
                       selectedSong.properties[
                         key as keyof typeof selectedSong.properties
@@ -1819,7 +1788,6 @@ export default function TrackFinder() {
                       !prop.multi_select.length
                     )
                       return null;
-
                     return (
                       <div key={key}>
                         <div className="py-2.5">
@@ -1827,7 +1795,7 @@ export default function TrackFinder() {
                             className="text-xs font-semibold mb-2"
                             style={{ color }}
                           >
-                            {label}
+                            {key}
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {prop.multi_select.map((item: { name: string }) => (
