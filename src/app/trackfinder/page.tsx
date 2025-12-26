@@ -108,6 +108,9 @@ export default function TrackFinder() {
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
+  
+  // URL에서 모달을 열었는지 추적 (중복 열기 방지)
+  const [initialModalOpened, setInitialModalOpened] = useState(false);
 
   // Portal을 위한 마운트 체크
   useEffect(() => {
@@ -264,21 +267,91 @@ export default function TrackFinder() {
     fetchTracks(true);
   }, [selectedFilters]);
 
-  // URL 쿼리 파라미터로 모달 열기
+  // 모달 열기 - Title로 Link 조회
+  // updateUrl: URL을 업데이트할지 여부 (URL에서 열 때는 false)
+  const openSongModal = useCallback(async (song: Song, updateUrl: boolean = true) => {
+    setSelectedSong(song);
+    setAudioLink(null);
+    setLoadingLink(true);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+
+    const title = song.properties.Title.title[0]?.text.content;
+    if (!title) {
+      setLoadingLink(false);
+      return;
+    }
+
+    // URL 업데이트 (사용자가 직접 모달을 열 때만)
+    if (updateUrl) {
+      const params = new URLSearchParams(window.location.search);
+      params.set("song", title);
+      router.push(`?${params.toString()}`, { scroll: false });
+    }
+
+    try {
+      const response = await fetch("/api/get-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+
+      if (response.ok) {
+        const fetchedData = await response.json();
+        setAudioLink(fetchedData.link);
+      }
+    } catch (error) {
+      console.error("Error fetching audio link:", error);
+    } finally {
+      setLoadingLink(false);
+    }
+  }, [router]);
+
+  // URL 쿼리 파라미터로 모달 열기 (페이지 로드 시)
   useEffect(() => {
     const songTitle = searchParams.get("song");
-    if (songTitle && data.length > 0 && !selectedSong) {
+    
+    // 조건: 
+    // 1. URL에 song 파라미터가 있고
+    // 2. 데이터가 로드되었고
+    // 3. 아직 초기 모달을 열지 않았고
+    // 4. 현재 열린 모달이 없을 때
+    if (songTitle && data.length > 0 && !initialModalOpened && !selectedSong) {
       const song = data.find(
-        (s) =>
-          s.properties.Title.title[0]?.text.content ===
-          decodeURIComponent(songTitle)
+        (s) => s.properties.Title.title[0]?.text.content === songTitle
       );
       if (song) {
-        openSongModal(song);
+        setInitialModalOpened(true);
+        // URL에서 열 때는 updateUrl을 false로 설정 (URL 중복 업데이트 방지)
+        openSongModal(song, false);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, data]);
+  }, [searchParams, data, initialModalOpened, selectedSong, openSongModal]);
+
+  // 모달 열릴 때 body 스크롤 방지
+  useEffect(() => {
+    if (selectedSong) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedSong]);
+
+  // 모달 닫기
+  const closeSongModal = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setSelectedSong(null);
+    setIsPlaying(false);
+
+    // URL에서 쿼리 파라미터 제거
+    router.push("/trackfinder", { scroll: false });
+  };
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -304,68 +377,6 @@ export default function TrackFinder() {
       setSortField(field);
       setSortOrder("desc");
     }
-  };
-
-  // 모달 열기 - Title로 Link 조회
-  const openSongModal = async (song: Song) => {
-    setSelectedSong(song);
-    setAudioLink(null);
-    setLoadingLink(true);
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-
-    const title = song.properties.Title.title[0]?.text.content;
-    if (!title) {
-      setLoadingLink(false);
-      return;
-    }
-
-    // URL 업데이트
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("song", encodeURIComponent(title));
-    router.push(`?${params.toString()}`, { scroll: false });
-
-    try {
-      const response = await fetch("/api/get-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAudioLink(data.link);
-      }
-    } catch (error) {
-      console.error("Error fetching audio link:", error);
-    } finally {
-      setLoadingLink(false);
-    }
-  };
-
-  // 모달 열릴 때 body 스크롤 방지
-  useEffect(() => {
-    if (selectedSong) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [selectedSong]);
-
-  // 모달 닫기
-  const closeSongModal = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    setSelectedSong(null);
-    setIsPlaying(false);
-
-    // URL에서 쿼리 파라미터 제거
-    router.push("/trackfinder", { scroll: false });
   };
 
   // 볼륨 변경
@@ -1234,7 +1245,7 @@ export default function TrackFinder() {
                             // Ctrl/Cmd + 클릭이나 중간 클릭이 아닐 때만 모달 열기
                             if (!e.ctrlKey && !e.metaKey && e.button === 0) {
                               e.preventDefault();
-                              openSongModal(song);
+                              openSongModal(song, true);
                             }
                           };
 
