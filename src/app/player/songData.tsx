@@ -42,7 +42,7 @@ export default function SongData({
       };
 
       try {
-        const response = await fetch("/api/notion", {
+        const response = await fetch("/api/song-detail", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
