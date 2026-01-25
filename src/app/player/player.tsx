@@ -74,9 +74,22 @@ const Player = () => {
 
   useEffect(() => {
     if (audioRef.current && currentLink) {
-      audioRef.current.src = currentLink;
-      audioRef.current.load();
-      playMusic();
+      const audio = audioRef.current;
+      audio.src = currentLink;
+      audio.load();
+
+      // 메타데이터 로드 후 재생 시도
+      const handleCanPlay = () => {
+        playMusic();
+        audio.removeEventListener('canplay', handleCanPlay);
+      };
+
+      audio.addEventListener('canplay', handleCanPlay);
+
+      // 클린업
+      return () => {
+        audio.removeEventListener('canplay', handleCanPlay);
+      };
     }
   }, [currentLink]);
 
@@ -191,9 +204,20 @@ const Player = () => {
     };
   }, [handleObserver]);
 
-  const playMusic = (): void => {
-    audioRef.current?.play();
-    setIsPlaying(true);
+  const playMusic = async (): Promise<void> => {
+    if (!audioRef.current) return;
+
+    try {
+      await audioRef.current.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error('재생 실패:', error);
+      setIsPlaying(false);
+      // 사용자에게 재생 버튼을 누르도록 유도
+      if (error instanceof Error && error.name === 'NotAllowedError') {
+        console.log('사용자 상호작용이 필요합니다. 재생 버튼을 눌러주세요.');
+      }
+    }
   };
 
   const pauseMusic = (): void => {
@@ -374,9 +398,7 @@ const Player = () => {
           </div>
 
           {/* Hidden Audio Element */}
-          <audio ref={audioRef} className="hidden" preload="auto">
-            <source src={currentLink} type="audio/mpeg" />
-          </audio>
+          <audio ref={audioRef} className="hidden" preload="auto" />
 
           {/* Progress Bar */}
           <div className="mb-8">

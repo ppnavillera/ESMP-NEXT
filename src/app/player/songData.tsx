@@ -34,7 +34,7 @@ export default function SongData({
     const fetchData = async () => {
       const searchPayload = {
         filter: {
-          property: "Song",
+          property: "Title",
           title: {
             equals: name,
           },
